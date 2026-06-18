@@ -12,9 +12,8 @@ uint64_t splitmix64(uint64_t seed) {
   seed ^= seed << 7;
   return seed;
 }
-
+//99% sure this is compiler optimized anyways
 float normalize64(uint64_t seed) { return (float)seed / (float)UINT64_MAX; }
-float normalize32(uint32_t seed) { return (float)seed / (float)UINT32_MAX; }
 
 uint64_t xorshift64(uint64_t seed) {
   uint64_t state = seed;

@@ -1,2 +1,4 @@
 vendored/
 build/
+
+test.c
