@@ -3,40 +3,126 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <threads.h>
 
 //raylib stuff
 #include "raylib.h"
+// #include "reasings.h"
+// #define RAYGUI_IMPLEMENTATION
+// #include "raygui.h"
 
 
-typedef struct userOptions{
+struct splashProps
+{
+    bool splashSkippedOrCompleted;
+    int splashAnimFrames;
+}splashProps;
+
+struct WINDOWOPTIONS
+{
     int screenWidth;
     int screenHeight;
     int targetFPS;
     char* windowTitle;
-}userOptions;
+}WINDOWOPTIONS={800,600,60,"Birdi"};
 
-typedef enum GameScreen{
-    MENU = 0,
-    SETUP,
-    GAME
-}GameScreen;
+struct menuController{}menuController={};
+    
+enum GameScreen
+{
+        SPLASH = 0,
+        MENU,
+        SETUP,
+        GAME
+};
+
 
 int main(void) {
-    userOptions defaultOptions = {800,600,60,"Window"};
-    
 
-    InitWindow(defaultOptions.screenWidth, defaultOptions.screenHeight, defaultOptions.windowTitle);
     
-    SetTargetFPS(defaultOptions.targetFPS);
+    InitWindow(WINDOWOPTIONS.screenWidth, WINDOWOPTIONS.screenHeight, WINDOWOPTIONS.windowTitle);
+ 
     
-    while (!WindowShouldClose()) {
+    enum GameScreen currentScreen = 0;
+
+    bool exitWindowRequested = false;
+    bool exitWindow = false;
+
+    SetExitKey(KEY_NULL);
+    SetTargetFPS(WINDOWOPTIONS.targetFPS);
+
+    while (!exitWindow) 
+    {
+        if(WindowShouldClose()) exitWindowRequested = true;
+
+        if(exitWindowRequested){
+            if(IsKeyPressed(KEY_Y)) exitWindow = true;
+            else if (IsKeyPressed(KEY_N)) exitWindowRequested = false;
+        }
+        
+        switch (currentScreen) 
+        {
+            case SPLASH:
+                {
+                if (splashProps.splashSkippedOrCompleted == true) 
+                    {
+                        currentScreen = 1;
+                    }
+                }break;
+            case MENU:
+                {
+
+                }break;
+            case SETUP:
+                {
+
+                }break;
+            case GAME:
+                {
+
+                }break;
+            default:
+                break;
+        }
 
         BeginDrawing();
+        //Draw loop
             ClearBackground(GRAY);
+            if(exitWindowRequested){
+                DrawRectangle(0, 100, WINDOWOPTIONS.screenWidth, 200, BLACK);
+                DrawText("Exit program? [Y/N]", 40, 180, 30, WHITE);
+            }
+                switch (currentScreen) 
+                {
+                    case SPLASH:
+                        {
+                        if (splashProps.splashSkippedOrCompleted == true) 
+                            {
+                                currentScreen = 1;
+                            }
+                        }break;
+                    case MENU:
+                        {
+
+                        }break;
+                    case SETUP:
+                        {
+
+                        }break;
+                    case GAME:
+                        {
+
+                        }break;
+                    default:
+                        break;
+                }
+
         EndDrawing();
     }
+
     CloseWindow();
-    return 0;
+    return EXIT_SUCCESS;
 }
