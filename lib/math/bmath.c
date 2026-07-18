@@ -1,7 +1,6 @@
-#include <stdbool.h>
-#include "bmath.h"
+#include "../b_core.h"
 
-float b_lerp(float a, float b, float step){
+double b_lerp(double a, double b, double step){
     return (1-step) * a + step * b;
 }
 

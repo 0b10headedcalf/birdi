@@ -1,4 +1,4 @@
-#include "b_rand.h"
+#include "../b_core.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
