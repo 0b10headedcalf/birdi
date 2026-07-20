@@ -1,40 +1,42 @@
 #include "../lib/b_core.h"
+#include "../include/glad/glad.h"
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 #include <stdlib.h>
 
+void frame_buffer_callback(GLFWwindow* window, int width, int height){
+    glViewport(0,0,width,height);
+}
+
 int main(int argc, char *argv[])
 {
-    if (!glfwInit()){
-        //init failed
-        fprintf(stderr,"%s", "GLFW context was unable to initialize!");
-        exit(EXIT_FAILURE);
-    }
+    glfwInit();
 
-    GLFWwindow* window = glfwCreateWindow(640, 480, "Window", NULL, NULL);
-
-    if (!window){
+    GLFWwindow *window = glfwCreateWindow(800, 600, "window", NULL, NULL);
+    if(window == NULL){
+        fprintf(stderr,"Failed to create window!\n");
         glfwTerminate();
-        fprintf(stderr,"%s","GLFW: failed to create window");
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
-
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);
-
-    while(!glfwWindowShouldClose(window)){
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
-        // const float ratio = width / (float) height;
-
-        glViewport(0, 0, width, height);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){
+        fprintf(stderr, "Failed to initialized GLAD");
+        return EXIT_FAILURE;
     }
+    glViewport(0,0,800,600);
+    glfwSetFramebufferSizeCallback(window, frame_buffer_callback);
+    
+    while(!glfwWindowShouldClose(window)){
 
+        //render loop
+        glClearColor(0.2f,0.2f,0.3f,1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        
+        
+        glfwPollEvents();
+        glfwSwapBuffers(window);
+    }
     glfwTerminate();
     return EXIT_SUCCESS;
 }
