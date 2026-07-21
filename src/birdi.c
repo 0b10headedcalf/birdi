@@ -2,12 +2,14 @@
 #include "../include/glad/glad.h"
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
+#include "../lib/b_loadShader.c"
 #include <stdio.h>
 #include <stdlib.h>
 
 void frame_buffer_callback(GLFWwindow* window, int width, int height){
     glViewport(0,0,width,height);
 }
+
 
 int main(int argc, char *argv[])
 {
