@@ -21,8 +21,10 @@ char* loadShader(const char* file){
     return buf.data;
 }
 
-int main(int argc, char *argv[])
-{
-    printf("%s", loadShader(argv[1]));
-    return EXIT_SUCCESS;
-}
+
+//debug
+// int main(int argc, char *argv[])
+// {
+//     printf("%s", loadShader(argv[1]));
+//     return EXIT_SUCCESS;
+// }

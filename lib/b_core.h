@@ -1,5 +1,6 @@
 #pragma once
 
+#include <GLFW/glfw3.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -30,4 +31,19 @@ b_String slice(b_String in_str, size_t startpos, size_t endpos);
 b_String string_replace_at(b_String in_str, char replace, size_t index, size_t desiredIndex);
 b_String fixBufOverflow(char* in_str);
 
+//window management
+typedef struct{
+    b_String* title;
+    int width;
+    int height;
+    GLFWmonitor* monitor;
+    GLFWwindow* share;
+}windowSettings;
 
+//state management
+typedef struct{
+    float FPS;
+    float time;
+    uint64_t objectCount;
+
+}state_Manager;
