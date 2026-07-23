@@ -6,19 +6,29 @@
 #include <stdlib.h>
 #include <stddef.h>
 
-#define WIDTH  800
-#define HEIGHT 600
+struct
+{
+    int width;
+    int height;
+    float currentFPS;
+    b_String title;
+}Settings = {800,600,60,{"Birdi",5}};
 
 int main(int argc, char *argv[])
 {
-    InitWindow(WIDTH, HEIGHT, "birdi");
-    SetTargetFPS(60);
+    InitWindow(Settings.width, Settings.height, Settings.title.data);
+    SetTargetFPS(Settings.currentFPS);
 
-    while (!WindowShouldClose())   // true on window-close or ESC
+    while (!WindowShouldClose())       
     {
+        //render loop
         BeginDrawing();
-        ClearBackground((Color){ 51, 51, 77, 255 });   // your old 0.2,0.2,0.3
+        ClearBackground((Color){ 51, 51, 77, 255 });   
 
+        //FPS counter
+        const char* fpsText = 0;
+        fpsText = TextFormat("FPS: %i",GetFPS(),Settings.currentFPS);
+        DrawText(fpsText,10,10,20,GREEN);
 
         EndDrawing();
     }

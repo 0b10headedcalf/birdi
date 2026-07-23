@@ -43,12 +43,4 @@ typedef struct{
     double z;
 }Vec3;
 
-
-//state management
-typedef struct{
-    float FPS;
-    float time;
-    uint64_t objectCount;
-}state_Manager;
-
 #endif
