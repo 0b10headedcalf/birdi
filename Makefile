@@ -1,2 +1,5 @@
-birdi:
-	gcc src/birdi.c src/glad.c -o birdi -O -Wall -lglfw -lGL
+CFLAGS = -O -Wall
+RAYLIB = -lraylib
+
+birdi: src/birdi.c
+	clang src/birdi.c -o build/birdi.bin $(CFLAGS) $(RAYLIB)

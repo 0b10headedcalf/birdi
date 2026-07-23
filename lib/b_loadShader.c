@@ -4,7 +4,7 @@
 #include "b_core.h"
 #include "b_string.c"
 
-char* loadShader(const char* file){
+b_String loadShader(const char* file){
     FILE* fp;
     b_String buf;
 
@@ -15,16 +15,18 @@ char* loadShader(const char* file){
     fseek(fp,0L,SEEK_END);
     buf.length = ftell(fp);
     fclose(fp);
+    
+    printf("%zu", buf.length);
 
     //TODO: implement loading contents into memory
     //
-    return buf.data;
+    return buf;
 }
 
 
 //debug
 // int main(int argc, char *argv[])
 // {
-//     printf("%s", loadShader(argv[1]));
+//     loadShader(argv[1]);
 //     return EXIT_SUCCESS;
 // }
