@@ -1,5 +1,7 @@
-CFLAGS = -O -Wall
-RAYLIB = -lraylib
+LINKS = -lraylib
 
-birdi: src/birdi.c
-	clang src/birdi.c -o build/birdi.bin $(CFLAGS) $(RAYLIB)
+build:  
+	gcc src/birdi.c -o birdi.bin $(LINKS) -O3 -Wall -fsanitize=address
+
+debug:
+	gcc src/birdi.c -o birdi.bin $(LINKS) -O0 -Wall -Wextra -fsanitize=address 
