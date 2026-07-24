@@ -31,6 +31,9 @@ int main(int argc, char *argv[])
 {
     uint8_t opt;
     enum{STANDALONE} mode = STANDALONE;
+    while(opt = getopt(argc,argv,"")){
+        
+    }
     if(argc <= 1){
         fprintf(stderr,"Please denote a command or run with 'standalone' flag");
         return EXIT_FAILURE;
