@@ -4,7 +4,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
-
+#include <stdio.h>
+#include <stddef.h>
+#include <unistd.h>
 
 //simple math defs
 double b_lerp(double a, double b, double step);
