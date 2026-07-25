@@ -2,7 +2,8 @@
 #include <raymath.h>
 // #include <rlgl.h>
 #include <stdio.h>
-
+#include <dlfcn.h>
+#include <stdlib.h>
 #include "../lib/b_core.h"
 
 typedef struct Settings
@@ -31,7 +32,6 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    // FILE* _load;
     
     int opt;
     
@@ -80,12 +80,7 @@ int main(int argc, char *argv[])
         CloseWindow();
     }
     else if(mode == LOAD){
-        // _load = fopen(argv[2], "r");
-        // char data[50];
-        // while(fgets(data,50,_load) != NULL){
-        //     printf("%s",data);
-        // }
-        // fclose(_load);
+        //TODO: implement TCC JIT loading
     }
     return EXIT_SUCCESS;
 }
