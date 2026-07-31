@@ -1,2 +1,2 @@
 CompileFlags:
-  Add: [-xc, -std=gnu99, -Wall]
+  Add: [-xc, -std=gnu11, -Wall]

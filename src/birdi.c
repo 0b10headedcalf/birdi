@@ -6,16 +6,13 @@
 #include <stdlib.h>
 #include "../lib/b_core.h"
 
-typedef struct Settings
+
+enum
 {
-    int width;
-    int height;
-    float currentFPS;
-    char* title;
-}Settings;
-
-
-enum{STANDALONE,LOAD} mode;
+    STANDALONE,
+    LOAD,
+    _NULL
+}mode = _NULL;
 
 void print_help(void){
 
@@ -23,7 +20,7 @@ void print_help(void){
 }
 
 
-void _isStandalone(Settings* Settings){
+void _standalone(Settings* Settings){
         //render loop
         BeginDrawing();
         ClearBackground((Color){ 51, 51, 77, 255 });   
@@ -33,6 +30,26 @@ void _isStandalone(Settings* Settings){
         fpsText = TextFormat("FPS: %i",GetFPS(),Settings->currentFPS);
         DrawText(fpsText,10,10,20,GREEN);
         EndDrawing();
+}
+
+int _loadEx(const char* example, Settings* settings){
+    typedef int (*func)(Settings* settings);
+    void* handle = dlopen(example, RTLD_LAZY);
+    if (handle == NULL){
+        fprintf(stderr,"Error: %s\n", dlerror());
+        exit(EXIT_FAILURE);
+    }
+
+    func run_example = dlsym(handle,"run"); 
+    if(run_example == NULL){
+        fprintf(stderr, "Error: %s\n", dlerror());
+        exit(EXIT_FAILURE);
+    }
+
+    run_example(settings);
+
+    dlclose(handle);
+    return EXIT_SUCCESS;
 }
 
 int main(int argc, char *argv[])
@@ -71,22 +88,24 @@ int main(int argc, char *argv[])
     Settings*  Settings = &global_defaults;
     InitWindow(Settings->width, Settings->height, Settings->title);
     SetTargetFPS(Settings->currentFPS);
-    while (!WindowShouldClose())       
-    {
-        if(mode == STANDALONE){
-            _isStandalone(Settings);
-        }
-        else{
-            //TODO: dynamic library loading
-            void* handle = dlopen(argv[2],RTLD_NOW);
-            if (!handle) {
-               fprintf(stderr, "%s\n", dlerror());
-               exit(EXIT_FAILURE);
-           }
-    }   
-
+    
+    //load shared lib
+    switch(mode){
+        case STANDALONE:
+            while(!WindowShouldClose()){
+                _standalone(Settings);
+            }
+            break;
+        case LOAD:
+            printf("Loading object: %s\n", argv[2]);
+            while (!WindowShouldClose()){
+                _loadEx(argv[2], Settings);
+            }
+            break;
+        case _NULL:
+            exit(EXIT_FAILURE);
+    }
     CloseWindow();
     return EXIT_SUCCESS;
-}
-}
+    }
 

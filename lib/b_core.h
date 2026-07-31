@@ -34,15 +34,36 @@ b_String fixBufOverflow(char* in_str);
 
 //rendering
 
-typedef struct{
+typedef struct vec2_t{
     double x;
     double y;
 }Vec2;
 
-typedef struct{
+typedef struct vec3_t{
     double x;
     double y;
     double z;
 }Vec3;
+
+typedef struct b_color_t{
+    double r;
+    double g;
+    double b;
+    double a;
+}b_Color;
+
+//draw
+void blit(Vec2* point,b_Color color);
+
+
+
+//raylib stuff
+typedef struct
+{
+    int width;
+    int height;
+    float currentFPS;
+    char* title;
+}Settings;
 
 #endif
