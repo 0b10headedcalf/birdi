@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <dlfcn.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "../lib/b_core.h"
 
 
@@ -12,15 +13,32 @@ enum
     STANDALONE,
     LOAD,
     _NULL
-}mode = _NULL;
+}MODE = _NULL;
+
+typedef enum {
+    ST_SPLASH,
+    ST_LOADMENU,
+    ST_PRESETS,
+    ST_LOADED
+}State;
+
+struct GameManager_t{
+    State next_state;
+};
 
 void print_help(void){
 
     puts("Included loader for creative coding and simulation of natural systems. Hoping to extend this later!\nPass in -s to run the binary without an example or loaded simulation file.");
 }
 
+void play_splash(){
+    //TODO implement splash screen
+    return;
+}
 
-void _standalone(Settings* Settings){
+
+
+void _standalone(Settings* Settings,struct GameManager_t* state){
         //render loop
         BeginDrawing();
         ClearBackground((Color){ 51, 51, 77, 255 });   
@@ -33,20 +51,19 @@ void _standalone(Settings* Settings){
 }
 
 int _loadEx(const char* example, Settings* settings){
-    typedef int (*func)(Settings* settings);
-    void* handle = dlopen(example, RTLD_LAZY);
+    void* handle = dlopen(example, RTLD_NOW);
     if (handle == NULL){
         fprintf(stderr,"Error: %s\n", dlerror());
         exit(EXIT_FAILURE);
     }
-
-    func run_example = dlsym(handle,"run"); 
-    if(run_example == NULL){
+    //function pointer for running the example
+    int (*run)(Settings* settings) = dlsym(handle,"run");
+    if(run == NULL){
         fprintf(stderr, "Error: %s\n", dlerror());
         exit(EXIT_FAILURE);
     }
 
-    run_example(settings);
+    run(settings);
 
     dlclose(handle);
     return EXIT_SUCCESS;
@@ -66,11 +83,11 @@ int main(int argc, char *argv[])
         switch(opt){
             case 's':
                 puts("Standalone mode");
-                mode = STANDALONE;
+                MODE = STANDALONE;
                 break;
             case 'l':
                 puts("Example mode");
-                mode = LOAD;
+                MODE = LOAD;
                 break;
             case 'h':
                 print_help();
@@ -84,16 +101,18 @@ int main(int argc, char *argv[])
     }
 
     //setup
-    static Settings global_defaults = {800,600,60,"Birdi\0"};
+    Settings global_defaults = {1024,768,60,"Birdi\0"}; 
     Settings*  Settings = &global_defaults;
+    struct GameManager_t _state;
+    struct GameManager_t* p_state = &_state;
     InitWindow(Settings->width, Settings->height, Settings->title);
     SetTargetFPS(Settings->currentFPS);
     
     //load shared lib
-    switch(mode){
+    switch(MODE){
         case STANDALONE:
             while(!WindowShouldClose()){
-                _standalone(Settings);
+                _standalone(Settings, p_state);
             }
             break;
         case LOAD:
@@ -103,6 +122,7 @@ int main(int argc, char *argv[])
             }
             break;
         case _NULL:
+            fprintf(stderr,"incorrect usage\n");
             exit(EXIT_FAILURE);
     }
     CloseWindow();

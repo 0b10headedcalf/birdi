@@ -57,7 +57,11 @@ void blit(Vec2* point,b_Color color);
 
 
 
-//raylib stuff
+//game stuff
+//opaque type containing state (different simulations may contain a different needed state)
+typedef struct GameManager_t GameManager;
+
+//this one should be pretty consistent
 typedef struct
 {
     int width;
