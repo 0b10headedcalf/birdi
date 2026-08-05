@@ -5,6 +5,6 @@
 #include <raylib.h>
 #include <stdlib.h>
 
-int run(Settings* settings);
+int run(void);
 
 #endif

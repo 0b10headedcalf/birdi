@@ -8,23 +8,23 @@
 #include "../lib/b_core.h"
 
 
-enum
+typedef enum
 {
     STANDALONE,
     LOAD,
     _NULL
-}MODE = _NULL;
+}MODE;
 
-typedef enum {
-    ST_SPLASH,
+typedef enum state_enum_t{
+    ST_SPLASH = 0,
     ST_LOADMENU,
     ST_PRESETS,
     ST_LOADED
-}State;
+}state_enum;
 
-struct GameManager_t{
-    State next_state;
-};
+typedef struct GameManager_t{
+    state_enum state_enum;
+}GameManager;
 
 void print_help(void){
 
@@ -38,32 +38,32 @@ void play_splash(){
 
 
 
-void _standalone(Settings* Settings,struct GameManager_t* state){
+void _standalone(Settings Settings, struct GameManager_t* state){
         //render loop
         BeginDrawing();
         ClearBackground((Color){ 51, 51, 77, 255 });   
 
         //FPS counter
         const char* fpsText = 0;
-        fpsText = TextFormat("FPS: %i",GetFPS(),Settings->currentFPS);
+        fpsText = TextFormat("FPS: %i",GetFPS(),Settings.currentFPS);
         DrawText(fpsText,10,10,20,GREEN);
         EndDrawing();
 }
 
-int _loadEx(const char* example, Settings* settings){
-    void* handle = dlopen(example, RTLD_NOW);
+int _loadEx(const char* example){
+    void* handle = dlopen(example, RTLD_LAZY);
     if (handle == NULL){
         fprintf(stderr,"Error: %s\n", dlerror());
         exit(EXIT_FAILURE);
     }
-    //function pointer for running the example
-    int (*run)(Settings* settings) = dlsym(handle,"run");
+    //function pointer for running
+    int (*run)() = dlsym(handle,"run");
     if(run == NULL){
         fprintf(stderr, "Error: %s\n", dlerror());
         exit(EXIT_FAILURE);
     }
 
-    run(settings);
+    run();
 
     dlclose(handle);
     return EXIT_SUCCESS;
@@ -71,6 +71,12 @@ int _loadEx(const char* example, Settings* settings){
 
 int main(int argc, char *argv[])
 {
+    MODE CURRENTMODE = _NULL;
+    GameManager _state;
+    GameManager* p_state = malloc(sizeof(_state));
+    
+    printf("State is at: %p with size of: %ld\n", p_state,sizeof(_state));
+
     if(argc <= 1){
         fprintf(stderr,"Please denote a command");
         return EXIT_FAILURE;
@@ -83,11 +89,11 @@ int main(int argc, char *argv[])
         switch(opt){
             case 's':
                 puts("Standalone mode");
-                MODE = STANDALONE;
+                CURRENTMODE = STANDALONE;
                 break;
             case 'l':
                 puts("Example mode");
-                MODE = LOAD;
+                CURRENTMODE = LOAD;
                 break;
             case 'h':
                 print_help();
@@ -101,31 +107,27 @@ int main(int argc, char *argv[])
     }
 
     //setup
-    Settings global_defaults = {1024,768,60,"Birdi\0"}; 
-    Settings*  Settings = &global_defaults;
-    struct GameManager_t _state;
-    struct GameManager_t* p_state = &_state;
-    InitWindow(Settings->width, Settings->height, Settings->title);
-    SetTargetFPS(Settings->currentFPS);
     
     //load shared lib
-    switch(MODE){
+    switch(CURRENTMODE){
         case STANDALONE:
+            Settings defaults = {1024,768,60,"Birdi\0"}; 
+            p_state->state_enum = ST_LOADED;
+            InitWindow(defaults.width, defaults.height, defaults.title);
+            SetTargetFPS(defaults.currentFPS);
             while(!WindowShouldClose()){
-                _standalone(Settings, p_state);
+                _standalone(defaults, p_state);
             }
+            CloseWindow();
             break;
         case LOAD:
             printf("Loading object: %s\n", argv[2]);
-            while (!WindowShouldClose()){
-                _loadEx(argv[2], Settings);
-            }
+            _loadEx(argv[2]);
             break;
         case _NULL:
             fprintf(stderr,"incorrect usage\n");
             exit(EXIT_FAILURE);
     }
-    CloseWindow();
     return EXIT_SUCCESS;
     }
 
