@@ -1,12 +1,14 @@
 #ifndef B_CORE
 #define B_CORE
 
+#include <raylib.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <unistd.h>
+
 
 //simple math defs
 double b_lerp(double a, double b, double step);
@@ -34,16 +36,6 @@ b_String fixBufOverflow(char* in_str);
 
 //rendering
 
-typedef struct vec2_t{
-    double x;
-    double y;
-}Vec2;
-
-typedef struct vec3_t{
-    double x;
-    double y;
-    double z;
-}Vec3;
 
 typedef struct b_color_t{
     double r;
@@ -53,9 +45,7 @@ typedef struct b_color_t{
 }b_Color;
 
 //draw
-void blit(Vec2* point,b_Color color);
-
-
+void blit(Vector2 point,b_Color color);
 
 //game stuff
 //opaque type containing state (different simulations may contain a different needed state)

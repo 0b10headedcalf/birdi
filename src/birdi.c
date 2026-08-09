@@ -1,5 +1,6 @@
 #include <raylib.h>
-#include <raymath.h>
+#define RAYGUI_IMPLEMENTATION
+#include "../include/raygui.h"
 // #include <rlgl.h>
 #include <stdio.h>
 #include <dlfcn.h>
@@ -8,19 +9,20 @@
 #include "../lib/b_core.h"
 
 
-typedef enum
+enum MODE
 {
     LOAD,
     _NULL
-}MODE;
+};
 
 typedef enum state_enum{
     ST_SPLASH = 0,
-    ST_LOADMENU,
-    ST_PRESETS,
+    ST_MENU,
+    ST_DIR,
     ST_LOADED
 }state_enum;
 
+static bool SPLASH_DONE = false;
 
 void print_help(void){
 
@@ -29,11 +31,15 @@ void print_help(void){
 
 void play_splash(){
     //TODO implement splash screen
+    DrawText("SPLASH_PLACEHOLDER", 20, 20, 40, BLACK);
+    if(IsKeyPressed(KEY_ENTER)){
+        SPLASH_DONE = true;
+    }
     return;
 }
 
 
-//this ended up being mostly useless
+//this ended up being mostly unused
 // void _standalone(Settings Settings, struct GameManager_t* state){
 //         //render loop
 //         BeginDrawing();
@@ -67,7 +73,7 @@ int _loadEx(const char* example){
 
 int main(int argc, char *argv[])
 {
-    MODE CURRENTMODE = _NULL;
+    enum MODE CURRENTMODE = _NULL;
 
     if(argc <= 1){
         Settings* global_defaults = &(Settings) {
@@ -76,28 +82,104 @@ int main(int argc, char *argv[])
             60,
             "Birdi"
         };
+
+        state_enum STATE = ST_SPLASH;
+        
+
+
+
         InitWindow(global_defaults->width, global_defaults->height, global_defaults->title);
+        Font figtree = LoadFontEx("assets/fonts/figtree-latin-300-normal.ttf",64,0,250);
+        SetTextLineSpacing(16);
+        static bool fpsCounter = false;
+
         SetTargetFPS(global_defaults->currentFPS);
         while(!WindowShouldClose()){
-        // state_enum_t state_enum = RUNNING;
-        // struct GameManager_t GameManager;
-        // GameManager.state_enum = &state_enum;
-        // if(IsKeyPressed(KEY_P) && GameManager.state_enum != PAUSED) {
-        //     *GameManager.state_enum = PAUSED;
-        // }
-        // else{
-        //     *GameManager.state_enum = RUNNING;
-        // }
-        // while(!init){
-        BeginDrawing();
-        ClearBackground(BLACK);   
-            //FPS counter
-            const char* fpsText = 0;
-            fpsText = TextFormat("FPS: %i",GetFPS(),global_defaults->currentFPS);
-            DrawText(fpsText,10,10,20,GREEN);
+            switch(STATE){
+                case ST_SPLASH:
+                    {
+                        if(SPLASH_DONE == true){
+                            STATE = ST_MENU;
+                        }
+                    }
+                    break;
+                case ST_MENU:
+                    {
+                        if(IsKeyPressed(KEY_ENTER)) STATE = ST_DIR;
+                    }
+                    break;
+                case ST_DIR:
+                    {
+                        if(IsKeyPressed(KEY_ENTER)) STATE = ST_LOADED;
+
+                    }
+                    break;
+                case ST_LOADED:
+                    {
+                        if(IsKeyPressed(KEY_ENTER)) CloseWindow();
+                    }
+                    break;
+                default:
+                    break;
+                }
+            
+            BeginDrawing();
+                ClearBackground(RAYWHITE);
+                switch(STATE){
+                    case ST_SPLASH:
+                        {
+                            play_splash();
+                        }
+                        break;
+                    case ST_MENU:
+                        {
+                            DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLUE);   
+                            //FPS counter
+                            if(fpsCounter){
+                                const char* fpsText = 0;
+                                fpsText = TextFormat("FPS: %i",GetFPS(),global_defaults->currentFPS);
+                                DrawText(fpsText,10,10,20,GREEN);
+                            }
+                            //TODO implement splash screen
+                            //
+                            DrawTextEx(figtree,"MENU NEW FONT",(Vector2){50,50},64,2,WHITE);
+
+                        }
+                        break;
+                    case ST_DIR:
+                        {
+                            DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLUE);   
+                            //FPS counter
+                            if(fpsCounter){
+                                const char* fpsText = 0;
+                                fpsText = TextFormat("FPS: %i",GetFPS(),global_defaults->currentFPS);
+                                DrawText(fpsText,10,10,20,GREEN);
+                            }
+                            //TODO implement splash screen
+                            DrawText("SELECTING FILE", 20, 20, 40, WHITE);
+
+                        }
+                        break;
+                    case ST_LOADED:
+                        {
+                            DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLUE);   
+                            //FPS counter
+                            if(fpsCounter){
+                                const char* fpsText = 0;
+                                fpsText = TextFormat("FPS: %i",GetFPS(),global_defaults->currentFPS);
+                                DrawText(fpsText,10,10,20,GREEN);
+                            }
+                            //TODO implement splash screen
+                            DrawText("LOADED", 20, 20, 40, WHITE);
+
+                        }
+                        break;
+                    default:
+                        break;
+                    }
             EndDrawing();
             }
-        CloseWindow();
+            CloseWindow();
     }
 
     int8_t opt;

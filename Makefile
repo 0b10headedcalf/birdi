@@ -1,4 +1,4 @@
-LINKS = -lraylib 
+LINKS = -lraylib -lm 
 FILE ?= none
 
 build:  
