@@ -10,25 +10,21 @@
 
 typedef enum
 {
-    STANDALONE,
     LOAD,
     _NULL
 }MODE;
 
-typedef enum state_enum_t{
+typedef enum state_enum{
     ST_SPLASH = 0,
     ST_LOADMENU,
     ST_PRESETS,
     ST_LOADED
 }state_enum;
 
-typedef struct GameManager_t{
-    state_enum state_enum;
-}GameManager;
 
 void print_help(void){
 
-    puts("Included loader for creative coding and simulation of natural systems. Hoping to extend this later!\nPass in -s to run the binary without an example or loaded simulation file.");
+    puts("Included loader for creative coding and simulation of natural systems.\n");
 }
 
 void play_splash(){
@@ -37,18 +33,18 @@ void play_splash(){
 }
 
 
-
-void _standalone(Settings Settings, struct GameManager_t* state){
-        //render loop
-        BeginDrawing();
-        ClearBackground((Color){ 51, 51, 77, 255 });   
-
-        //FPS counter
-        const char* fpsText = 0;
-        fpsText = TextFormat("FPS: %i",GetFPS(),Settings.currentFPS);
-        DrawText(fpsText,10,10,20,GREEN);
-        EndDrawing();
-}
+//this ended up being mostly useless
+// void _standalone(Settings Settings, struct GameManager_t* state){
+//         //render loop
+//         BeginDrawing();
+//         ClearBackground((Color){ 51, 51, 77, 255 });   
+//
+//         //FPS counter
+//         const char* fpsText = 0;
+//         fpsText = TextFormat("FPS: %i",GetFPS(),Settings.currentFPS);
+//         DrawText(fpsText,10,10,20,GREEN);
+//         EndDrawing();
+// }
 
 int _loadEx(const char* example){
     void* handle = dlopen(example, RTLD_LAZY);
@@ -72,25 +68,42 @@ int _loadEx(const char* example){
 int main(int argc, char *argv[])
 {
     MODE CURRENTMODE = _NULL;
-    GameManager _state;
-    GameManager* p_state = malloc(sizeof(_state));
-    
-    printf("State is at: %p with size of: %ld\n", p_state,sizeof(_state));
 
     if(argc <= 1){
-        fprintf(stderr,"Please denote a command");
-        return EXIT_FAILURE;
+        Settings* global_defaults = &(Settings) {
+            1024,
+            768,
+            60,
+            "Birdi"
+        };
+        InitWindow(global_defaults->width, global_defaults->height, global_defaults->title);
+        SetTargetFPS(global_defaults->currentFPS);
+        while(!WindowShouldClose()){
+        // state_enum_t state_enum = RUNNING;
+        // struct GameManager_t GameManager;
+        // GameManager.state_enum = &state_enum;
+        // if(IsKeyPressed(KEY_P) && GameManager.state_enum != PAUSED) {
+        //     *GameManager.state_enum = PAUSED;
+        // }
+        // else{
+        //     *GameManager.state_enum = RUNNING;
+        // }
+        // while(!init){
+        BeginDrawing();
+        ClearBackground(BLACK);   
+            //FPS counter
+            const char* fpsText = 0;
+            fpsText = TextFormat("FPS: %i",GetFPS(),global_defaults->currentFPS);
+            DrawText(fpsText,10,10,20,GREEN);
+            EndDrawing();
+            }
+        CloseWindow();
     }
 
-    
     int8_t opt;
     
     while((opt = getopt(argc,argv,"shl:")) != -1){
         switch(opt){
-            case 's':
-                puts("Standalone mode");
-                CURRENTMODE = STANDALONE;
-                break;
             case 'l':
                 puts("Example mode");
                 CURRENTMODE = LOAD;
@@ -100,26 +113,13 @@ int main(int argc, char *argv[])
                 exit(EXIT_FAILURE);
                 break;
             default: 
-                puts("\nUsage: birdi.bin -l [file/example]");
+                puts("\n Invalid command!");
                 exit(EXIT_FAILURE);
         }
         
     }
-
-    //setup
-    
     //load shared lib
     switch(CURRENTMODE){
-        case STANDALONE:
-            Settings defaults = {1024,768,60,"Birdi\0"}; 
-            p_state->state_enum = ST_LOADED;
-            InitWindow(defaults.width, defaults.height, defaults.title);
-            SetTargetFPS(defaults.currentFPS);
-            while(!WindowShouldClose()){
-                _standalone(defaults, p_state);
-            }
-            CloseWindow();
-            break;
         case LOAD:
             printf("Loading object: %s\n", argv[2]);
             _loadEx(argv[2]);
@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
         case _NULL:
             fprintf(stderr,"incorrect usage\n");
             exit(EXIT_FAILURE);
-    }
+        }
     return EXIT_SUCCESS;
     }
 

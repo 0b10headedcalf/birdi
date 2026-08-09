@@ -3,18 +3,18 @@
 #include <raylib.h>
 #include <stdlib.h>
 
-typedef struct{
+typedef struct Walker{
     void* blit;
     void* walk;
 }Walker;
 
-typedef enum{
+typedef enum state_enum{
     PAUSED,
     RUNNING
-}state_enum_t;
+}state_enum;
 
-struct GameManager_t{
-    state_enum_t* state_enum;
+struct GameManager{
+    state_enum* state_enum;
 };
 
 // static bool init = false;
@@ -26,10 +26,9 @@ struct GameManager_t{
 
 int run(){
     // inititialize();
-    Settings global_defaults = {1024,768,60,"Random Walk\0"}; 
-    Settings*  Settings = &global_defaults;
-    InitWindow(Settings->width, Settings->height, Settings->title);
-    SetTargetFPS(Settings->currentFPS);
+    Settings* global_defaults = &(Settings){1024,768,60,"Random Walk\0"}; 
+    InitWindow(global_defaults->width, global_defaults->height, global_defaults->title);
+    SetTargetFPS(global_defaults->currentFPS);
     while(!WindowShouldClose()){
     // state_enum_t state_enum = RUNNING;
     // struct GameManager_t GameManager;
@@ -47,7 +46,7 @@ int run(){
 
     //FPS counter
     const char* fpsText = 0;
-    fpsText = TextFormat("FPS: %i",GetFPS(),Settings->currentFPS);
+    fpsText = TextFormat("FPS: %i",GetFPS(),global_defaults->currentFPS);
     DrawText(fpsText,10,10,20,GREEN);
     EndDrawing();
     }

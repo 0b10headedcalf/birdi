@@ -59,8 +59,8 @@ void blit(Vec2* point,b_Color color);
 
 //game stuff
 //opaque type containing state (different simulations may contain a different needed state)
-typedef struct GameManager_t GameManager;
-typedef enum state_enum_t state_enum;
+typedef struct GameManager GameManager;
+typedef enum state_enum state_enum;
 
 //this one should be pretty consistent
 typedef struct
