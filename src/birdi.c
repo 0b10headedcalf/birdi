@@ -1,4 +1,5 @@
 #include <raylib.h>
+#include <stdint.h>
 #define RAYGUI_IMPLEMENTATION
 #include "../include/raygui.h"
 // #include <rlgl.h>
@@ -7,6 +8,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "../lib/b_core.h"
+
+
+#define MAX_FILEPATH_SIZE 1024
+#define FILE_FILTER "DIRS*;.so;.c"
 
 
 enum MODE
@@ -19,6 +24,7 @@ typedef enum state_enum{
     ST_SPLASH = 0,
     ST_MENU,
     ST_DIR,
+    ST_OPTIONS,
     ST_LOADED
 }state_enum;
 
@@ -77,24 +83,51 @@ int main(int argc, char *argv[])
 
     if(argc <= 1){
         Settings* global_defaults = &(Settings) {
-            1024,
-            768,
+            1280,
+            720,
             60,
             "Birdi"
         };
 
+        //menu state
         state_enum STATE = ST_SPLASH;
-        
 
+        //fd
+        char directory[MAX_FILEPATH_SIZE] = {0};
+        strcpy(directory,GetWorkingDirectory());
 
+        FilePathList files = LoadDirectoryFilesEx(directory, FILE_FILTER, false);
+        int listScrollIndex = 0;
+        int listItemActive = -1;
+        int listItemFocused = -1;
 
+        //gui vars
+        int btn = 0;
+
+        //init
         InitWindow(global_defaults->width, global_defaults->height, global_defaults->title);
-        Font figtree = LoadFontEx("assets/fonts/figtree-latin-300-normal.ttf",64,0,250);
+        Font c_font = LoadFontEx("assets/fonts/geist-pixel-latin-400-normal.ttf",128,0,250);
         SetTextLineSpacing(16);
         static bool fpsCounter = false;
 
         SetTargetFPS(global_defaults->currentFPS);
         while(!WindowShouldClose()){
+            if(btn){
+                TextCopy(directory, GetPrevDirectoryPath(directory));
+                UnloadDirectoryFiles(files);
+                files = LoadDirectoryFilesEx(directory, FILE_FILTER, false);
+                int listScrollIndex = 0;
+                int listItemActive = -1;
+                int listItemFocused = -1;
+            }
+            if(listItemActive >= 0 && (listItemActive < (int)files.count) && DirectoryExists(files.paths[listItemActive])){
+                TextCopy(directory,files.paths[listItemActive]);
+                UnloadDirectoryFiles(files);
+                files = LoadDirectoryFilesEx(directory, FILE_FILTER, false);
+                int listScrollIndex = 0;
+                int listItemActive = -1;
+                int listItemFocused = -1;
+            }
             switch(STATE){
                 case ST_SPLASH:
                     {
@@ -111,6 +144,11 @@ int main(int argc, char *argv[])
                 case ST_DIR:
                     {
                         if(IsKeyPressed(KEY_ENTER)) STATE = ST_LOADED;
+
+                    }
+                    break;
+                case ST_OPTIONS:
+                    {
 
                     }
                     break;
@@ -142,11 +180,28 @@ int main(int argc, char *argv[])
                             }
                             //TODO implement splash screen
                             //
-                            DrawTextEx(figtree,"MENU NEW FONT",(Vector2){50,50},64,2,WHITE);
+                            DrawTextEx(c_font,"MENU NEW FONT",(Vector2){50,50},64,2,WHITE);
 
                         }
                         break;
                     case ST_DIR:
+                        {
+                            //FPS counter
+                            if(fpsCounter){
+                                const char* fpsText = 0;
+                                fpsText = TextFormat("FPS: %i",GetFPS(),global_defaults->currentFPS);
+                                DrawText(fpsText,10,10,20,GREEN);
+                            }
+                            btn = GuiButton((Rectangle){40.0f,10.0f,48,28}, "<");
+                            GuiLabel((Rectangle){ 40 + 48 + 10, 10, 700, 28 }, directory);
+                            GuiSetStyle(DEFAULT, TEXT_SIZE, GuiGetFont().baseSize);
+
+                            
+                            GuiListViewEx((Rectangle){ 0, 50, (float)GetScreenWidth(), (float)GetScreenHeight() - 50 },
+                                files.paths, files.count, &listScrollIndex, &listItemActive, &listItemFocused);
+                        }
+                        break;
+                    case ST_OPTIONS:
                         {
                             DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLUE);   
                             //FPS counter
@@ -155,8 +210,6 @@ int main(int argc, char *argv[])
                                 fpsText = TextFormat("FPS: %i",GetFPS(),global_defaults->currentFPS);
                                 DrawText(fpsText,10,10,20,GREEN);
                             }
-                            //TODO implement splash screen
-                            DrawText("SELECTING FILE", 20, 20, 40, WHITE);
 
                         }
                         break;
