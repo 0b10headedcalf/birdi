@@ -128,6 +128,8 @@ int main(int argc, char *argv[])
                 int listItemActive = -1;
                 int listItemFocused = -1;
             }
+
+            //primary logic
             switch(STATE){
                 case ST_SPLASH:
                     {
@@ -161,6 +163,8 @@ int main(int argc, char *argv[])
                     break;
                 }
             
+
+            //rendering loop
             BeginDrawing();
                 ClearBackground(RAYWHITE);
                 switch(STATE){
@@ -194,7 +198,7 @@ int main(int argc, char *argv[])
                             }
                             btn = GuiButton((Rectangle){40.0f,10.0f,48,28}, "<");
                             GuiLabel((Rectangle){ 40 + 48 + 10, 10, 700, 28 }, directory);
-                            GuiSetStyle(DEFAULT, TEXT_SIZE, GuiGetFont().baseSize);
+                            // GuiSetStyle(DEFAULT, TEXT_SIZE, GuiGetFont().baseSize);
 
                             
                             GuiListViewEx((Rectangle){ 0, 50, (float)GetScreenWidth(), (float)GetScreenHeight() - 50 },
@@ -260,8 +264,7 @@ int main(int argc, char *argv[])
             _loadEx(argv[2]);
             break;
         case _NULL:
-            fprintf(stderr,"incorrect usage\n");
-            exit(EXIT_FAILURE);
+            exit(EXIT_SUCCESS);
         }
     return EXIT_SUCCESS;
     }
