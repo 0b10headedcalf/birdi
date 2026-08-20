@@ -11,27 +11,32 @@
 
 
 #define MAX_FILEPATH_SIZE 1024
-#define FILE_FILTER "DIRS*;.so;.c"
+#define FILE_FILTER "DIRS*;.so"
+#define FONT_PRESET "assets/fonts/geist-pixel-latin-400-normal.ttf"
 
 
-enum MODE
+//functions
+void play_splash();
+void print_help();
+int _loadEx(const char*,Settings*,bool);
+
+typedef enum
 {
+    STANDALONE=0,
     LOAD,
-    _NULL
-};
+}MODE;
 
-typedef enum state_enum{
+typedef enum{
     ST_SPLASH = 0,
     ST_MENU,
     ST_DIR,
     ST_OPTIONS,
     ST_LOADED
-}state_enum;
+}Main_App_State;
 
 static bool SPLASH_DONE = false;
 
-void print_help(void){
-
+void print_help(){
     puts("Included loader for creative coding and simulation of natural systems.\n");
 }
 
@@ -44,34 +49,26 @@ void play_splash(){
     return;
 }
 
-
-//this ended up being mostly unused
-// void _standalone(Settings Settings, struct GameManager_t* state){
-//         //render loop
-//         BeginDrawing();
-//         ClearBackground((Color){ 51, 51, 77, 255 });   
-//
-//         //FPS counter
-//         const char* fpsText = 0;
-//         fpsText = TextFormat("FPS: %i",GetFPS(),Settings.currentFPS);
-//         DrawText(fpsText,10,10,20,GREEN);
-//         EndDrawing();
-// }
-
-int _loadEx(const char* example){
+int _loadEx(const char* example, Settings* global_defaults, bool standalone){
     void* handle = dlopen(example, RTLD_LAZY);
     if (handle == NULL){
         fprintf(stderr,"Error: %s\n", dlerror());
         exit(EXIT_FAILURE);
     }
     //function pointer for running
-    int (*run)() = dlsym(handle,"run");
-    if(run == NULL){
+    int (*run)(Settings*) = dlsym(handle,"run");
+    int (*load_standalone)() = dlsym(handle,"load");
+    if(run == NULL || load_standalone == NULL){
         fprintf(stderr, "Error: %s\n", dlerror());
         exit(EXIT_FAILURE);
     }
 
-    run();
+    if(standalone){
+        load_standalone();
+    }
+    else{
+        run(global_defaults);
+    }
 
     dlclose(handle);
     return EXIT_SUCCESS;
@@ -79,18 +76,45 @@ int _loadEx(const char* example){
 
 int main(int argc, char *argv[])
 {
-    enum MODE CURRENTMODE = _NULL;
+    Settings* global_defaults = &(Settings) {
+        GetScreenWidth(),
+        GetScreenHeight(),
+        60,
+        "Birdi"
+    };
+    MODE _MODE = -1;
+    int opt;
+    bool standalone = false;
 
+    while((opt = getopt(argc,argv,"hl")) != -1){
+        switch(opt){
+            case 'l':
+                puts("Example mode");
+                _MODE = LOAD;
+                break;
+            case 'h':
+                print_help();
+                exit(EXIT_FAILURE);
+                break;
+            default:
+                break;
+        }
+
+    //load shared lib
+    switch(_MODE){
+        case LOAD:
+            printf("Loading object: %s\n", argv[2]);
+            _loadEx(argv[2],global_defaults,true);
+            break;
+        default:
+            exit(EXIT_SUCCESS);
+        }
+        
+    }
     if(argc <= 1){
-        Settings* global_defaults = &(Settings) {
-            1280,
-            720,
-            60,
-            "Birdi"
-        };
 
         //menu state
-        state_enum STATE = ST_SPLASH;
+        Main_App_State main_state = ST_SPLASH;
 
         //fd
         char directory[MAX_FILEPATH_SIZE] = {0};
@@ -103,10 +127,11 @@ int main(int argc, char *argv[])
 
         //gui vars
         int btn = 0;
-
+        
         //init
+        SetConfigFlags(FLAG_BORDERLESS_WINDOWED_MODE);
         InitWindow(global_defaults->width, global_defaults->height, global_defaults->title);
-        Font c_font = LoadFontEx("assets/fonts/geist-pixel-latin-400-normal.ttf",128,0,250);
+        Font c_font = LoadFontEx(FONT_PRESET,128,0,250);
         SetTextLineSpacing(16);
         static bool fpsCounter = false;
 
@@ -130,22 +155,23 @@ int main(int argc, char *argv[])
             }
 
             //primary logic
-            switch(STATE){
+            switch(main_state){
                 case ST_SPLASH:
                     {
                         if(SPLASH_DONE == true){
-                            STATE = ST_MENU;
+                            main_state = ST_MENU;
                         }
                     }
                     break;
                 case ST_MENU:
                     {
-                        if(IsKeyPressed(KEY_ENTER)) STATE = ST_DIR;
+                        if(IsKeyPressed(KEY_ENTER)) main_state = ST_DIR;
+                        if(IsKeyPressed(KEY_R)) _loadEx("examples/randomwalk.so", global_defaults,standalone = false);
                     }
                     break;
                 case ST_DIR:
                     {
-                        if(IsKeyPressed(KEY_ENTER)) STATE = ST_LOADED;
+                        if(IsKeyPressed(KEY_ENTER)) main_state = ST_LOADED;
 
                     }
                     break;
@@ -167,7 +193,7 @@ int main(int argc, char *argv[])
             //rendering loop
             BeginDrawing();
                 ClearBackground(RAYWHITE);
-                switch(STATE){
+                switch(main_state){
                     case ST_SPLASH:
                         {
                             play_splash();
@@ -238,34 +264,6 @@ int main(int argc, char *argv[])
             }
             CloseWindow();
     }
-
-    int8_t opt;
-    
-    while((opt = getopt(argc,argv,"shl:")) != -1){
-        switch(opt){
-            case 'l':
-                puts("Example mode");
-                CURRENTMODE = LOAD;
-                break;
-            case 'h':
-                print_help();
-                exit(EXIT_FAILURE);
-                break;
-            default: 
-                puts("\n Invalid command!");
-                exit(EXIT_FAILURE);
-        }
-        
-    }
-    //load shared lib
-    switch(CURRENTMODE){
-        case LOAD:
-            printf("Loading object: %s\n", argv[2]);
-            _loadEx(argv[2]);
-            break;
-        case _NULL:
-            exit(EXIT_SUCCESS);
-        }
     return EXIT_SUCCESS;
     }
 
