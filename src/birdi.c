@@ -1,5 +1,6 @@
 #include <raylib.h>
 #include <stdint.h>
+#include <string.h>
 #define RAYGUI_IMPLEMENTATION
 #include "../include/raygui.h"
 // #include <rlgl.h>
@@ -9,9 +10,8 @@
 #include <unistd.h>
 #include "../lib/b_core.h"
 
-
-#define MAX_FILEPATH_SIZE 1024
-#define FILE_FILTER "DIRS*;.so"
+//macros
+#define MAX_FILE_PATH_LEN 1024
 #define FONT_PRESET "assets/fonts/geist-pixel-latin-400-normal.ttf"
 
 
@@ -100,59 +100,36 @@ int main(int argc, char *argv[])
                 break;
         }
 
-    //load shared lib
-    switch(_MODE){
-        case LOAD:
-            printf("Loading object: %s\n", argv[2]);
-            _loadEx(argv[2],global_defaults,true);
-            break;
-        default:
-            exit(EXIT_SUCCESS);
-        }
-        
+    if(_MODE == LOAD){
+        printf("Loading object: %s\n", argv[2]);
+        _loadEx(argv[2],global_defaults,true);
+        } else _MODE = STANDALONE;
     }
     if(argc <= 1){
-
         //menu state
         Main_App_State main_state = ST_SPLASH;
 
         //fd
-        char directory[MAX_FILEPATH_SIZE] = {0};
-        strcpy(directory,GetWorkingDirectory());
+        char directory[MAX_FILE_PATH_LEN] = {0};
+        strncpy(directory, GetWorkingDirectory(), strlen(GetWorkingDirectory()));
 
-        FilePathList files = LoadDirectoryFilesEx(directory, FILE_FILTER, false);
+        FilePathList files = LoadDirectoryFiles(directory);
         int listScrollIndex = 0;
         int listItemActive = -1;
         int listItemFocused = -1;
 
-        //gui vars
-        int btn = 0;
+        //gui stuff
+        int dir_back_button = 0;
         
         //init
         SetConfigFlags(FLAG_BORDERLESS_WINDOWED_MODE);
         InitWindow(global_defaults->width, global_defaults->height, global_defaults->title);
         Font c_font = LoadFontEx(FONT_PRESET,128,0,250);
-        SetTextLineSpacing(16);
+        // SetTextLineSpacing(16);
         static bool fpsCounter = false;
 
         SetTargetFPS(global_defaults->currentFPS);
         while(!WindowShouldClose()){
-            if(btn){
-                TextCopy(directory, GetPrevDirectoryPath(directory));
-                UnloadDirectoryFiles(files);
-                files = LoadDirectoryFilesEx(directory, FILE_FILTER, false);
-                int listScrollIndex = 0;
-                int listItemActive = -1;
-                int listItemFocused = -1;
-            }
-            if(listItemActive >= 0 && (listItemActive < (int)files.count) && DirectoryExists(files.paths[listItemActive])){
-                TextCopy(directory,files.paths[listItemActive]);
-                UnloadDirectoryFiles(files);
-                files = LoadDirectoryFilesEx(directory, FILE_FILTER, false);
-                int listScrollIndex = 0;
-                int listItemActive = -1;
-                int listItemFocused = -1;
-            }
 
             //primary logic
             switch(main_state){
@@ -171,6 +148,22 @@ int main(int argc, char *argv[])
                     break;
                 case ST_DIR:
                     {
+                        if(dir_back_button){
+                            TextCopy(directory, GetPrevDirectoryPath(directory));
+                            UnloadDirectoryFiles(files);
+                            files = LoadDirectoryFiles(directory);
+                            int listScrollIndex = 0;
+                            int listItemActive = -1;
+                            int listItemFocused = -1;
+                        }
+                        if(listItemActive >= 0 && (listItemActive < (int)files.count) && DirectoryExists(files.paths[listItemActive])){
+                            TextCopy(directory,files.paths[listItemActive]);
+                            UnloadDirectoryFiles(files);
+                            files = LoadDirectoryFiles(directory);
+                            int listScrollIndex = 0;
+                            int listItemActive = -1;
+                            int listItemFocused = -1;
+                        }
                         if(IsKeyPressed(KEY_ENTER)) main_state = ST_LOADED;
 
                     }
@@ -202,12 +195,6 @@ int main(int argc, char *argv[])
                     case ST_MENU:
                         {
                             DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLUE);   
-                            //FPS counter
-                            if(fpsCounter){
-                                const char* fpsText = 0;
-                                fpsText = TextFormat("FPS: %i",GetFPS(),global_defaults->currentFPS);
-                                DrawText(fpsText,10,10,20,GREEN);
-                            }
                             //TODO implement splash screen
                             //
                             DrawTextEx(c_font,"MENU NEW FONT",(Vector2){50,50},64,2,WHITE);
@@ -222,9 +209,9 @@ int main(int argc, char *argv[])
                                 fpsText = TextFormat("FPS: %i",GetFPS(),global_defaults->currentFPS);
                                 DrawText(fpsText,10,10,20,GREEN);
                             }
-                            btn = GuiButton((Rectangle){40.0f,10.0f,48,28}, "<");
+                            dir_back_button = GuiButton((Rectangle){40.0f,10.0f,48,28}, "<");
                             GuiLabel((Rectangle){ 40 + 48 + 10, 10, 700, 28 }, directory);
-                            // GuiSetStyle(DEFAULT, TEXT_SIZE, GuiGetFont().baseSize);
+                            GuiSetStyle(DEFAULT, TEXT_SIZE, GuiGetFont().baseSize);
 
                             
                             GuiListViewEx((Rectangle){ 0, 50, (float)GetScreenWidth(), (float)GetScreenHeight() - 50 },
@@ -235,11 +222,6 @@ int main(int argc, char *argv[])
                         {
                             DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLUE);   
                             //FPS counter
-                            if(fpsCounter){
-                                const char* fpsText = 0;
-                                fpsText = TextFormat("FPS: %i",GetFPS(),global_defaults->currentFPS);
-                                DrawText(fpsText,10,10,20,GREEN);
-                            }
 
                         }
                         break;

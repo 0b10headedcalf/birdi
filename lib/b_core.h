@@ -1,6 +1,7 @@
 #ifndef B_CORE
 #define B_CORE
 
+
 #include <raylib.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -8,18 +9,10 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <unistd.h>
-
-
+#include "math/bmath.h"
+#include "rngs/b_rand.h"
+#include "b_string.h"
 //simple math defs
-double b_lerp(double a, double b, double step);
-
-// basic RNG
-uint64_t INIT_SEED(void);
-double normalize64(uint64_t seed);
-
-// PRNG algorithms
-uint64_t splitmix64(uint64_t seed);
-uint64_t xorshift64(uint64_t seed);
 
 
 //string stuff
