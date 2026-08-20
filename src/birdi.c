@@ -8,7 +8,7 @@
 #include <dlfcn.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "../lib/b_core.h"
+#include "../lib/birdi.h"
 
 //macros
 #define MAX_FILE_PATH_LEN 1024

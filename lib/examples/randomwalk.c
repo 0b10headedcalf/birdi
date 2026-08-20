@@ -1,4 +1,4 @@
-#include "../b_core.h"
+#include "../birdi.h"
 #include <raylib.h>
 #include <stdlib.h>
 
