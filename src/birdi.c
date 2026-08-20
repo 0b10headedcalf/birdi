@@ -8,17 +8,13 @@
 #include <dlfcn.h>
 #include <stdlib.h>
 #include <unistd.h>
+#define BIRDI_IMPL
 #include "../lib/birdi.h"
-
 //macros
 #define MAX_FILE_PATH_LEN 1024
 #define FONT_PRESET "assets/fonts/geist-pixel-latin-400-normal.ttf"
 
 
-//functions
-void play_splash();
-void print_help();
-int _loadEx(const char*,Settings*,bool);
 
 typedef enum
 {
@@ -49,26 +45,20 @@ void play_splash(){
     return;
 }
 
-int _loadEx(const char* example, Settings* global_defaults, bool standalone){
+int _loadEx(const char* example, Settings* global_defaults, bool loader){
     void* handle = dlopen(example, RTLD_LAZY);
     if (handle == NULL){
         fprintf(stderr,"Error: %s\n", dlerror());
         exit(EXIT_FAILURE);
     }
     //function pointer for running
-    int (*run)(Settings*) = dlsym(handle,"run");
-    int (*load_standalone)() = dlsym(handle,"load");
-    if(run == NULL || load_standalone == NULL){
+    int (*run)(bool,Settings*) = dlsym(handle,"run");
+    if(run == NULL){
         fprintf(stderr, "Error: %s\n", dlerror());
         exit(EXIT_FAILURE);
     }
 
-    if(standalone){
-        load_standalone();
-    }
-    else{
-        run(global_defaults);
-    }
+    run(loader,global_defaults);
 
     dlclose(handle);
     return EXIT_SUCCESS;
@@ -84,12 +74,11 @@ int main(int argc, char *argv[])
     };
     MODE _MODE = -1;
     int opt;
-    bool standalone = false;
 
     while((opt = getopt(argc,argv,"hl")) != -1){
         switch(opt){
             case 'l':
-                puts("Example mode");
+                puts("Loading example...");
                 _MODE = LOAD;
                 break;
             case 'h':
@@ -100,11 +89,13 @@ int main(int argc, char *argv[])
                 break;
         }
 
+    }
+    //if an example is loaded from the main binary rather than using -l in the cli
     if(_MODE == LOAD){
         printf("Loading object: %s\n", argv[2]);
-        _loadEx(argv[2],global_defaults,true);
-        } else _MODE = STANDALONE;
-    }
+        _loadEx(argv[2],global_defaults,false);
+        }
+    //checking if the binary is run directly
     if(argc <= 1){
         //menu state
         Main_App_State main_state = ST_SPLASH;
@@ -112,7 +103,6 @@ int main(int argc, char *argv[])
         //fd
         char directory[MAX_FILE_PATH_LEN] = {0};
         strncpy(directory, GetWorkingDirectory(), strlen(GetWorkingDirectory()));
-
         FilePathList files = LoadDirectoryFiles(directory);
         int listScrollIndex = 0;
         int listItemActive = -1;
@@ -126,11 +116,11 @@ int main(int argc, char *argv[])
         InitWindow(global_defaults->width, global_defaults->height, global_defaults->title);
         Font c_font = LoadFontEx(FONT_PRESET,128,0,250);
         // SetTextLineSpacing(16);
-        static bool fpsCounter = false;
+        volatile bool fpsCounter = false;
 
         SetTargetFPS(global_defaults->currentFPS);
+ 
         while(!WindowShouldClose()){
-
             //primary logic
             switch(main_state){
                 case ST_SPLASH:
@@ -143,7 +133,6 @@ int main(int argc, char *argv[])
                 case ST_MENU:
                     {
                         if(IsKeyPressed(KEY_ENTER)) main_state = ST_DIR;
-                        if(IsKeyPressed(KEY_R)) _loadEx("examples/randomwalk.so", global_defaults,standalone = false);
                     }
                     break;
                 case ST_DIR:
@@ -152,20 +141,18 @@ int main(int argc, char *argv[])
                             TextCopy(directory, GetPrevDirectoryPath(directory));
                             UnloadDirectoryFiles(files);
                             files = LoadDirectoryFiles(directory);
-                            int listScrollIndex = 0;
-                            int listItemActive = -1;
-                            int listItemFocused = -1;
+                            // listScrollIndex = 0;
+                            // listItemActive = -1;
+                            // listItemFocused = -1;
                         }
                         if(listItemActive >= 0 && (listItemActive < (int)files.count) && DirectoryExists(files.paths[listItemActive])){
                             TextCopy(directory,files.paths[listItemActive]);
                             UnloadDirectoryFiles(files);
                             files = LoadDirectoryFiles(directory);
-                            int listScrollIndex = 0;
-                            int listItemActive = -1;
-                            int listItemFocused = -1;
+                            // listScrollIndex = 0;
+                            // listItemActive = -1;
+                            // listItemFocused = -1;
                         }
-                        if(IsKeyPressed(KEY_ENTER)) main_state = ST_LOADED;
-
                     }
                     break;
                 case ST_OPTIONS:

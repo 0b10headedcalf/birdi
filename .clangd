@@ -1,2 +1,2 @@
 CompileFlags:
-  Add: [-xc, -std=gnu11, -Wall]
+  Add: [-xc, -std=gnu11, -Wall, -Wextra, -Ilib, -Llib]

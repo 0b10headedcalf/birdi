@@ -1,5 +1,5 @@
-#ifndef B_CORE
-#define B_CORE
+#ifndef BIRDI
+#define BIRDI
 
 #include <stdint.h>
 #include <stddef.h>
@@ -26,10 +26,19 @@ b_String slice(b_String in_str, size_t startpos, size_t endpos);
 b_String string_replace_at(b_String in_str, char replace, size_t index, size_t desiredIndex);
 b_String fixBufOverflow(char* in_str);
 
-const int64_t INIT_SEED(void); 
-int64_t splitmix64(uint64_t seed);
-double normalize64(uint64_t seed);
-int64_t xorshift64(uint64_t seed);
+void INIT_SEED(int64_t* seed); 
+int64_t splitmix64(int64_t* seed);
+double normalize(int64_t* seed);
+int64_t xorshift64(int64_t* seed);
 double b_lerp(double a, double b, double step);
+
+#endif
+
+#ifdef BIRDI_IMPL
+#include <time.h>
+
+void INIT_SEED(int64_t* seed){
+    *seed = (uint64_t)time(NULL); 
+}
 
 #endif
