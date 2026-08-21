@@ -30,16 +30,18 @@ typedef enum{
 }MenuState;
 
 typedef struct{
-    bool SPLASH_DONE;
+    int dir_back_button;
     char directory[MAX_FILE_PATH_LEN];
     int FDScrollIndex;
     int FDItemActive;
     int FDItemFocused;
-}App;
+}GUI;
 
 typedef struct{
-    int dir_back_button;
-}GUI;
+    GUI* GUI;
+    bool SPLASH_DONE;
+}App;
+
 
 
 int _loadEx(const char* example, Settings* global_defaults, bool loader){
@@ -63,8 +65,10 @@ int _loadEx(const char* example, Settings* global_defaults, bool loader){
 
 int main(int argc, char *argv[])
 {
-    int SWIDTH = 1024;
-    int SHEIGHT = 768;
+
+    //standard defaults
+    int SWIDTH = 1280;
+    int SHEIGHT = 720;
     int TARGETFPS = 60;
     const char* WINDOWTITLE = "Birdi";
 
@@ -104,18 +108,17 @@ int main(int argc, char *argv[])
     if(argc <= 1){
         //menu state
         MenuState menu_state = ST_SPLASH;
-        App* app_state = &(App){
-            false,//splash is finished
+        GUI* MenuGui_Init  = &(GUI){
+            0,//back_button
             {0},//directory string
             0, //ScrollIndex
-            -1,//ItemActive
-            -1,//ItemFocused
+            0,//ItemActive
+            0,//ItemFocused
         };
-        GUI* MenuGui  = &(GUI){
-            0,//back_button
-        };
+        App App = {MenuGui_Init,false};
+        App.GUI = MenuGui_Init;
         //fd
-        char* directory = app_state->directory;
+        char* directory = App.GUI->directory;
         strncpy(directory, GetWorkingDirectory(), strlen(GetWorkingDirectory()));
         FilePathList files = LoadDirectoryFiles(directory);
         //gui stuff
@@ -134,7 +137,7 @@ int main(int argc, char *argv[])
             switch(menu_state){
                 case ST_SPLASH:
                     {
-                        if(app_state->SPLASH_DONE == true){
+                        if(App.SPLASH_DONE == true){
                             menu_state = ST_MENU;
                         }
                     }
@@ -146,7 +149,7 @@ int main(int argc, char *argv[])
                     break;
                 case ST_DIR:
                     {
-                        if(MenuGui->dir_back_button || IsKeyPressed(KEY_BACKSPACE)){
+                        if(MenuGui_Init->dir_back_button || IsKeyPressed(KEY_BACKSPACE)){
                             TextCopy(directory, GetPrevDirectoryPath(directory));
                             // UnloadDirectoryFiles(files);
                             files = LoadDirectoryFiles(directory);
@@ -154,8 +157,8 @@ int main(int argc, char *argv[])
                             // listItemActive = -1;
                             // listItemFocused = -1;
                         }
-                        if(app_state->FDItemActive >= 0 && (app_state->FDItemActive < (int)files.count) && DirectoryExists(files.paths[app_state->FDItemActive])){
-                            TextCopy(directory,files.paths[app_state->FDItemActive]);
+                        if(App.GUI->FDItemActive >= 0 && (App.GUI->FDItemActive < (int)files.count) && DirectoryExists(files.paths[App.GUI->FDItemActive])){
+                            TextCopy(directory,files.paths[App.GUI->FDItemActive]);
                             UnloadDirectoryFiles(files);
                             files = LoadDirectoryFiles(directory);
                             // listScrollIndex = 0;
@@ -187,7 +190,7 @@ int main(int argc, char *argv[])
                         {
                             DrawText("SPLASH_PLACEHOLDER", 20, 20, 40, BLACK);
                             if(IsKeyPressed(KEY_ENTER)){
-                                app_state->SPLASH_DONE = true;
+                                App.SPLASH_DONE = true;
                             }
                         }
                         break;
@@ -202,11 +205,11 @@ int main(int argc, char *argv[])
                         break;
                     case ST_DIR:
                         {
-                            MenuGui->dir_back_button = GuiButton((Rectangle){40.0f,20.0f,100,50}, "< BACK");
+                            MenuGui_Init->dir_back_button = GuiButton((Rectangle){40.0f,20.0f,100,50}, "< BACK");
                             GuiLabel((Rectangle){ (float)(SWIDTH/ 2.0f) - 100.0f, 10, 800, 50 }, directory);
                             GuiSetStyle(DEFAULT, TEXT_SIZE, GuiGetFont().baseSize);
                             GuiListViewEx((Rectangle){ 0, 50, (float)SWIDTH, (float)SHEIGHT - 50 },
-                                files.paths, files.count, &app_state->FDScrollIndex, &app_state->FDItemActive,&app_state->FDItemFocused);
+                                files.paths, files.count, &App.GUI->FDScrollIndex, &App.GUI->FDItemActive,&App.GUI->FDItemFocused);
                         }
                         break;
                     case ST_OPTIONS:
