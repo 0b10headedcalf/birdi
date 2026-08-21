@@ -9,9 +9,10 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <string.h>
+#include <assert.h>
 
-//macros
 #define MAX_FILE_PATH_LEN 1024
+#define MASCOT_PATH "assets/images/pip.gif"
 #define FONT_PRESET "assets/fonts/geist-pixel-latin-400-normal.ttf"
 
 typedef enum
@@ -28,9 +29,17 @@ typedef enum{
     ST_LOADED
 }MenuState;
 
-struct StateInformation{
+typedef struct{
     bool SPLASH_DONE;
-};
+    char directory[MAX_FILE_PATH_LEN];
+    int FDScrollIndex;
+    int FDItemActive;
+    int FDItemFocused;
+}App;
+
+typedef struct{
+    int dir_back_button;
+}GUI;
 
 
 int _loadEx(const char* example, Settings* global_defaults, bool loader){
@@ -69,6 +78,8 @@ int main(int argc, char *argv[])
     MODE _MODE = -1;
     int cli_opt;
 
+    assert(_MODE != STANDALONE || _MODE != LOAD);
+
     while((cli_opt = getopt(argc,argv,"hl")) != -1){
         switch(cli_opt){
             case 'l':
@@ -76,7 +87,7 @@ int main(int argc, char *argv[])
                 _MODE = LOAD;
                 break;
             case 'h':
-                puts("Included loader for creative coding and simulation of natural systems.\n");
+                puts("Included loader for creative coding and simulation of natural systems.\nRun the binary with the -l flag to load a shared object!\nThe standalone version also includes a file browser.\nHave fun!");
                 exit(EXIT_FAILURE);
                 break;
             default:
@@ -93,19 +104,21 @@ int main(int argc, char *argv[])
     if(argc <= 1){
         //menu state
         MenuState menu_state = ST_SPLASH;
-        struct StateInformation* state_information = &(struct StateInformation){
-            false,
+        App* app_state = &(App){
+            false,//splash is finished
+            {0},//directory string
+            0, //ScrollIndex
+            -1,//ItemActive
+            -1,//ItemFocused
+        };
+        GUI* MenuGui  = &(GUI){
+            0,//back_button
         };
         //fd
-        char directory[MAX_FILE_PATH_LEN] = {0};
+        char* directory = app_state->directory;
         strncpy(directory, GetWorkingDirectory(), strlen(GetWorkingDirectory()));
         FilePathList files = LoadDirectoryFiles(directory);
-        int FDScrollIndex = 0;
-        int FDItemActive = -1;
-        int FDItemFocused = -1;
-
         //gui stuff
-        int dir_back_button = 0;
         
         //init
         // SetConfigFlags(FLAG_BORDERLESS_WINDOWED_MODE);
@@ -121,7 +134,7 @@ int main(int argc, char *argv[])
             switch(menu_state){
                 case ST_SPLASH:
                     {
-                        if(state_information->SPLASH_DONE == true){
+                        if(app_state->SPLASH_DONE == true){
                             menu_state = ST_MENU;
                         }
                     }
@@ -133,7 +146,7 @@ int main(int argc, char *argv[])
                     break;
                 case ST_DIR:
                     {
-                        if(dir_back_button || IsKeyPressed(KEY_BACKSPACE)){
+                        if(MenuGui->dir_back_button || IsKeyPressed(KEY_BACKSPACE)){
                             TextCopy(directory, GetPrevDirectoryPath(directory));
                             // UnloadDirectoryFiles(files);
                             files = LoadDirectoryFiles(directory);
@@ -141,8 +154,8 @@ int main(int argc, char *argv[])
                             // listItemActive = -1;
                             // listItemFocused = -1;
                         }
-                        if(FDItemActive >= 0 && (FDItemActive < (int)files.count) && DirectoryExists(files.paths[FDItemActive])){
-                            TextCopy(directory,files.paths[FDItemActive]);
+                        if(app_state->FDItemActive >= 0 && (app_state->FDItemActive < (int)files.count) && DirectoryExists(files.paths[app_state->FDItemActive])){
+                            TextCopy(directory,files.paths[app_state->FDItemActive]);
                             UnloadDirectoryFiles(files);
                             files = LoadDirectoryFiles(directory);
                             // listScrollIndex = 0;
@@ -174,7 +187,7 @@ int main(int argc, char *argv[])
                         {
                             DrawText("SPLASH_PLACEHOLDER", 20, 20, 40, BLACK);
                             if(IsKeyPressed(KEY_ENTER)){
-                                state_information->SPLASH_DONE = true;
+                                app_state->SPLASH_DONE = true;
                             }
                         }
                         break;
@@ -189,11 +202,11 @@ int main(int argc, char *argv[])
                         break;
                     case ST_DIR:
                         {
-                            dir_back_button = GuiButton((Rectangle){40.0f,20.0f,100,50}, "< BACK");
+                            MenuGui->dir_back_button = GuiButton((Rectangle){40.0f,20.0f,100,50}, "< BACK");
                             GuiLabel((Rectangle){ (float)(SWIDTH/ 2.0f) - 100.0f, 10, 800, 50 }, directory);
                             GuiSetStyle(DEFAULT, TEXT_SIZE, GuiGetFont().baseSize);
                             GuiListViewEx((Rectangle){ 0, 50, (float)SWIDTH, (float)SHEIGHT - 50 },
-                                files.paths, files.count, &FDScrollIndex, &FDItemActive, &FDItemFocused);
+                                files.paths, files.count, &app_state->FDScrollIndex, &app_state->FDItemActive,&app_state->FDItemFocused);
                         }
                         break;
                     case ST_OPTIONS:

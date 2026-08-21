@@ -16,7 +16,7 @@ uint64_t splitmix64(uint64_t seed) {
 }
 
 //normalizes a 64 bit integer into a value between 0&1
-double normalize(uint64_t n){
+double normalize(int64_t n){
     return (double)n / (double)UINT64_MAX;
 }
 //
