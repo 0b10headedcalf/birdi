@@ -1,20 +1,18 @@
 #include <raylib.h>
-#include <stdint.h>
-#include <string.h>
 #define RAYGUI_IMPLEMENTATION
 #include "../include/raygui.h"
-// #include <rlgl.h>
+#define BIRDI_IMPLEMENTATION
+#include "../lib/birdi.h"
 #include <stdio.h>
 #include <dlfcn.h>
 #include <stdlib.h>
 #include <unistd.h>
-#define BIRDI_IMPL
-#include "../lib/birdi.h"
+#include <stdint.h>
+#include <string.h>
+
 //macros
 #define MAX_FILE_PATH_LEN 1024
 #define FONT_PRESET "assets/fonts/geist-pixel-latin-400-normal.ttf"
-
-
 
 typedef enum
 {
@@ -28,22 +26,12 @@ typedef enum{
     ST_DIR,
     ST_OPTIONS,
     ST_LOADED
-}Main_App_State;
+}MenuState;
 
-static bool SPLASH_DONE = false;
+struct StateInformation{
+    bool SPLASH_DONE;
+};
 
-void print_help(){
-    puts("Included loader for creative coding and simulation of natural systems.\n");
-}
-
-void play_splash(){
-    //TODO implement splash screen
-    DrawText("SPLASH_PLACEHOLDER", 20, 20, 40, BLACK);
-    if(IsKeyPressed(KEY_ENTER)){
-        SPLASH_DONE = true;
-    }
-    return;
-}
 
 int _loadEx(const char* example, Settings* global_defaults, bool loader){
     void* handle = dlopen(example, RTLD_LAZY);
@@ -66,23 +54,29 @@ int _loadEx(const char* example, Settings* global_defaults, bool loader){
 
 int main(int argc, char *argv[])
 {
-    Settings* global_defaults = &(Settings) {
-        GetScreenWidth(),
-        GetScreenHeight(),
-        60,
-        "Birdi"
+    int SWIDTH = 1024;
+    int SHEIGHT = 768;
+    int TARGETFPS = 60;
+    const char* WINDOWTITLE = "Birdi";
+
+
+    Settings* SimSettings = &(Settings) {
+        SWIDTH,
+        SHEIGHT,
+        TARGETFPS,
+        WINDOWTITLE
     };
     MODE _MODE = -1;
-    int opt;
+    int cli_opt;
 
-    while((opt = getopt(argc,argv,"hl")) != -1){
-        switch(opt){
+    while((cli_opt = getopt(argc,argv,"hl")) != -1){
+        switch(cli_opt){
             case 'l':
                 puts("Loading example...");
                 _MODE = LOAD;
                 break;
             case 'h':
-                print_help();
+                puts("Included loader for creative coding and simulation of natural systems.\n");
                 exit(EXIT_FAILURE);
                 break;
             default:
@@ -93,60 +87,62 @@ int main(int argc, char *argv[])
     //if an example is loaded from the main binary rather than using -l in the cli
     if(_MODE == LOAD){
         printf("Loading object: %s\n", argv[2]);
-        _loadEx(argv[2],global_defaults,false);
+        _loadEx(argv[2],SimSettings,false);
         }
     //checking if the binary is run directly
     if(argc <= 1){
         //menu state
-        Main_App_State main_state = ST_SPLASH;
-
+        MenuState menu_state = ST_SPLASH;
+        struct StateInformation* state_information = &(struct StateInformation){
+            false,
+        };
         //fd
         char directory[MAX_FILE_PATH_LEN] = {0};
         strncpy(directory, GetWorkingDirectory(), strlen(GetWorkingDirectory()));
         FilePathList files = LoadDirectoryFiles(directory);
-        int listScrollIndex = 0;
-        int listItemActive = -1;
-        int listItemFocused = -1;
+        int FDScrollIndex = 0;
+        int FDItemActive = -1;
+        int FDItemFocused = -1;
 
         //gui stuff
         int dir_back_button = 0;
         
         //init
-        SetConfigFlags(FLAG_BORDERLESS_WINDOWED_MODE);
-        InitWindow(global_defaults->width, global_defaults->height, global_defaults->title);
+        // SetConfigFlags(FLAG_BORDERLESS_WINDOWED_MODE);
+        InitWindow(SimSettings->width, SimSettings->height, SimSettings->title);
         Font c_font = LoadFontEx(FONT_PRESET,128,0,250);
         // SetTextLineSpacing(16);
         volatile bool fpsCounter = false;
 
-        SetTargetFPS(global_defaults->currentFPS);
+        SetTargetFPS(SimSettings->currentFPS);
  
         while(!WindowShouldClose()){
             //primary logic
-            switch(main_state){
+            switch(menu_state){
                 case ST_SPLASH:
                     {
-                        if(SPLASH_DONE == true){
-                            main_state = ST_MENU;
+                        if(state_information->SPLASH_DONE == true){
+                            menu_state = ST_MENU;
                         }
                     }
                     break;
                 case ST_MENU:
                     {
-                        if(IsKeyPressed(KEY_ENTER)) main_state = ST_DIR;
+                        if(IsKeyPressed(KEY_ENTER)) menu_state = ST_DIR;
                     }
                     break;
                 case ST_DIR:
                     {
-                        if(dir_back_button){
+                        if(dir_back_button || IsKeyPressed(KEY_BACKSPACE)){
                             TextCopy(directory, GetPrevDirectoryPath(directory));
-                            UnloadDirectoryFiles(files);
+                            // UnloadDirectoryFiles(files);
                             files = LoadDirectoryFiles(directory);
                             // listScrollIndex = 0;
                             // listItemActive = -1;
                             // listItemFocused = -1;
                         }
-                        if(listItemActive >= 0 && (listItemActive < (int)files.count) && DirectoryExists(files.paths[listItemActive])){
-                            TextCopy(directory,files.paths[listItemActive]);
+                        if(FDItemActive >= 0 && (FDItemActive < (int)files.count) && DirectoryExists(files.paths[FDItemActive])){
+                            TextCopy(directory,files.paths[FDItemActive]);
                             UnloadDirectoryFiles(files);
                             files = LoadDirectoryFiles(directory);
                             // listScrollIndex = 0;
@@ -173,10 +169,13 @@ int main(int argc, char *argv[])
             //rendering loop
             BeginDrawing();
                 ClearBackground(RAYWHITE);
-                switch(main_state){
+                switch(menu_state){
                     case ST_SPLASH:
                         {
-                            play_splash();
+                            DrawText("SPLASH_PLACEHOLDER", 20, 20, 40, BLACK);
+                            if(IsKeyPressed(KEY_ENTER)){
+                                state_information->SPLASH_DONE = true;
+                            }
                         }
                         break;
                     case ST_MENU:
@@ -190,19 +189,11 @@ int main(int argc, char *argv[])
                         break;
                     case ST_DIR:
                         {
-                            //FPS counter
-                            if(fpsCounter){
-                                const char* fpsText = 0;
-                                fpsText = TextFormat("FPS: %i",GetFPS(),global_defaults->currentFPS);
-                                DrawText(fpsText,10,10,20,GREEN);
-                            }
-                            dir_back_button = GuiButton((Rectangle){40.0f,10.0f,48,28}, "<");
-                            GuiLabel((Rectangle){ 40 + 48 + 10, 10, 700, 28 }, directory);
+                            dir_back_button = GuiButton((Rectangle){40.0f,20.0f,100,50}, "< BACK");
+                            GuiLabel((Rectangle){ (float)(SWIDTH/ 2.0f) - 100.0f, 10, 800, 50 }, directory);
                             GuiSetStyle(DEFAULT, TEXT_SIZE, GuiGetFont().baseSize);
-
-                            
-                            GuiListViewEx((Rectangle){ 0, 50, (float)GetScreenWidth(), (float)GetScreenHeight() - 50 },
-                                files.paths, files.count, &listScrollIndex, &listItemActive, &listItemFocused);
+                            GuiListViewEx((Rectangle){ 0, 50, (float)SWIDTH, (float)SHEIGHT - 50 },
+                                files.paths, files.count, &FDScrollIndex, &FDItemActive, &FDItemFocused);
                         }
                         break;
                     case ST_OPTIONS:
@@ -218,7 +209,7 @@ int main(int argc, char *argv[])
                             //FPS counter
                             if(fpsCounter){
                                 const char* fpsText = 0;
-                                fpsText = TextFormat("FPS: %i",GetFPS(),global_defaults->currentFPS);
+                                fpsText = TextFormat("FPS: %i",GetFPS(),SimSettings->currentFPS);
                                 DrawText(fpsText,10,10,20,GREEN);
                             }
                             //TODO implement splash screen
