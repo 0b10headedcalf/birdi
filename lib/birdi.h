@@ -18,13 +18,13 @@ typedef struct
 typedef struct {
     const char* data;
     size_t length;
-}b_String;
+}String;
 
-b_String* conversion_fromCstring(char* in_str);
-char* conversion_toCstring(b_String in_str);
-b_String slice(b_String in_str, size_t startpos, size_t endpos);
-b_String string_replace_at(b_String in_str, char replace, size_t index, size_t desiredIndex);
-b_String fixBufOverflow(char* in_str);
+String* conversion_fromCstring(char* in_str);
+char* conversion_toCstring(String in_str);
+String slice(String in_str, size_t startpos, size_t endpos);
+String string_replace_at(String in_str, char replace, size_t index, size_t desiredIndex);
+String fixBufOverflow(char* in_str);
 
 void INIT_SEED(uint64_t* seed); 
 uint64_t splitmix64(uint64_t seed);

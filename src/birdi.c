@@ -12,8 +12,9 @@
 #include <assert.h>
 
 #define MAX_FILE_PATH_LEN 1024
-#define MASCOT_PATH "assets/images/pip.gif"
+#define MASCOT_PATH "assets/images/pip.png"
 #define FONT_PRESET "assets/fonts/geist-pixel-latin-400-normal.ttf"
+#define FONTSPACING 10
 
 typedef enum
 {
@@ -50,7 +51,6 @@ int _loadEx(const char* example, Settings* global_defaults, bool loader){
         fprintf(stderr,"Error: %s\n", dlerror());
         exit(EXIT_FAILURE);
     }
-    //function pointer for running
     int (*run)(bool,Settings*) = dlsym(handle,"run");
     if(run == NULL){
         fprintf(stderr, "Error: %s\n", dlerror());
@@ -66,19 +66,14 @@ int _loadEx(const char* example, Settings* global_defaults, bool loader){
 int main(int argc, char *argv[])
 {
 
-    //standard defaults
-    int SWIDTH = 1280;
-    int SHEIGHT = 720;
-    int TARGETFPS = 60;
-    const char* WINDOWTITLE = "Birdi";
-
-
-    Settings* SimSettings = &(Settings) {
-        SWIDTH,
-        SHEIGHT,
-        TARGETFPS,
-        WINDOWTITLE
+    Settings DefaultSettings = {
+        1280,
+        720,
+        60,
+        "Birdi\0"
     };
+
+    //standard defaults
     MODE _MODE = -1;
     int cli_opt;
 
@@ -102,10 +97,24 @@ int main(int argc, char *argv[])
     //if an example is loaded from the main binary rather than using -l in the cli
     if(_MODE == LOAD){
         printf("Loading object: %s\n", argv[2]);
-        _loadEx(argv[2],SimSettings,false);
+        _loadEx(argv[2],&DefaultSettings,false);
         }
-    //checking if the binary is run directly
+
     if(argc <= 1){
+        //gui stuff
+        
+        //init
+        // SetConfigFlags(FLAG_BORDERLESS_WINDOWED_MODE);
+        InitWindow(GetScreenWidth(), GetScreenHeight(), "Birdi");
+        Settings* SimSettings = &(Settings){
+            GetScreenWidth(),
+            GetScreenHeight(),
+            60,
+            "Birdi"
+        };
+        int SWIDTH = SimSettings->width;
+        int SHEIGHT = SimSettings->height;
+
         //menu state
         MenuState menu_state = ST_SPLASH;
         GUI* MenuGui_Init  = &(GUI){
@@ -121,11 +130,6 @@ int main(int argc, char *argv[])
         char* directory = App.GUI->directory;
         strncpy(directory, GetWorkingDirectory(), strlen(GetWorkingDirectory()));
         FilePathList files = LoadDirectoryFiles(directory);
-        //gui stuff
-        
-        //init
-        // SetConfigFlags(FLAG_BORDERLESS_WINDOWED_MODE);
-        InitWindow(SimSettings->width, SimSettings->height, SimSettings->title);
         Font c_font = LoadFontEx(FONT_PRESET,128,0,250);
         // SetTextLineSpacing(16);
         volatile bool fpsCounter = false;
@@ -139,6 +143,9 @@ int main(int argc, char *argv[])
                     {
                         if(App.SPLASH_DONE == true){
                             menu_state = ST_MENU;
+                        }
+                        if(IsKeyPressed(KEY_ENTER)){
+                            App.SPLASH_DONE = true;
                         }
                     }
                     break;
@@ -188,10 +195,11 @@ int main(int argc, char *argv[])
                 switch(menu_state){
                     case ST_SPLASH:
                         {
-                            DrawText("SPLASH_PLACEHOLDER", 20, 20, 40, BLACK);
-                            if(IsKeyPressed(KEY_ENTER)){
-                                App.SPLASH_DONE = true;
-                            }
+                            const char* skip_prompt = "Press Enter to Skip\0";
+                            DrawRectangle(0, 0, SWIDTH, SHEIGHT, BLACK);
+                            DrawTextEx(c_font, skip_prompt, (Vector2){SWIDTH / 2.0f - (FONTSPACING*strlen(skip_prompt)),SHEIGHT - 50.0f},40, FONTSPACING, WHITE);
+                            
+
                         }
                         break;
                     case ST_MENU:
