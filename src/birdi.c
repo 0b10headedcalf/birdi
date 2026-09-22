@@ -45,7 +45,7 @@ typedef struct{
 
 
 
-int _loadEx(const char* example, Settings* global_defaults, bool loader){
+int _loadExCLI(const char* example, Settings* global_defaults, bool loader){
     void* handle = dlopen(example, RTLD_LAZY);
     if (handle == NULL){
         fprintf(stderr,"Error: %s\n", dlerror());
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
     //if an example is loaded from the main binary rather than using -l in the cli
     if(_MODE == LOAD){
         printf("Loading object: %s\n", argv[2]);
-        _loadEx(argv[2],&DefaultSettings,false);
+        _loadExCLI(argv[2],&DefaultSettings,false);
         }
 
     if(argc <= 1){
@@ -131,6 +131,9 @@ int main(int argc, char *argv[])
         strncpy(directory, GetWorkingDirectory(), strlen(GetWorkingDirectory()));
         FilePathList files = LoadDirectoryFiles(directory);
         Font c_font = LoadFontEx(FONT_PRESET,128,0,250);
+        Texture2D pip_tex = LoadTexture(MASCOT_PATH);
+        float elapsed = 0.0f;
+        float splash_alpha = 0.0f;
         // SetTextLineSpacing(16);
         volatile bool fpsCounter = false;
 
@@ -195,19 +198,47 @@ int main(int argc, char *argv[])
                 switch(menu_state){
                     case ST_SPLASH:
                         {
-                            const char* skip_prompt = "Press Enter to Skip\0";
-                            DrawRectangle(0, 0, SWIDTH, SHEIGHT, BLACK);
-                            DrawTextEx(c_font, skip_prompt, (Vector2){SWIDTH / 2.0f - (FONTSPACING*strlen(skip_prompt)),SHEIGHT - 50.0f},40, FONTSPACING, WHITE);
-                            
-
+                        enum FADE_STATES {
+                            FADEIN,
+                            FADEHOLD,
+                            FADEOUT
+                        };
+                        enum FADE_STATES splash_fade = FADEIN;
+                        elapsed += GetFrameTime();
+                        if(elapsed < 2.5f){
+                            splash_alpha = elapsed / 2.5f;
+                        }
+                        else if(elapsed < 5.0f){
+                            splash_alpha = 1.0f;
+                        }
+                        else if(elapsed < 7.5f){
+                            splash_alpha = 1.0f - (elapsed - 5.0f)/2.5f;
+                        }
+                        else{
+                            App.SPLASH_DONE = true;
+                        }
+                        float logo_scale_factor = 6.0f;
+                        const char* skip_prompt = "Press Enter to Skip\0";
+                        DrawRectangle(0, 0, SWIDTH, SHEIGHT, BLACK);
+                        DrawTextEx(c_font, skip_prompt, (Vector2){SWIDTH / 2.0f - (FONTSPACING*strlen(skip_prompt)),SHEIGHT - 50.0f},40, FONTSPACING, WHITE);
+                        switch(splash_fade){
+                            case FADEIN:
+                        splash_alpha += 0.05;
+                        DrawTextureEx(pip_tex, (Vector2){SWIDTH/2.0f - pip_tex.width/2.0f * logo_scale_factor, SHEIGHT/2.0f - pip_tex.height/2.0f * logo_scale_factor}, 0.0f, logo_scale_factor, Fade(WHITE, splash_alpha));
+                        break;
+                            case FADEHOLD:
+                        DrawTextureEx(pip_tex, (Vector2){SWIDTH/2.0f - pip_tex.width/2.0f * logo_scale_factor, SHEIGHT/2.0f - pip_tex.height/2.0f * logo_scale_factor}, 0.0f, logo_scale_factor, Fade(WHITE, 1.0f));
+                        break;
+                            case FADEOUT:
+                        splash_alpha -= 0.05;
+                        DrawTextureEx(pip_tex, (Vector2){SWIDTH/2.0f - pip_tex.width/2.0f * logo_scale_factor, SHEIGHT/2.0f - pip_tex.height/2.0f * logo_scale_factor}, 0.0f, logo_scale_factor, Fade(WHITE, splash_alpha));
+                        break;
+                            }
                         }
                         break;
                     case ST_MENU:
                         {
-                            DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLUE);   
-                            //TODO implement splash screen
-                            //
-                            DrawTextEx(c_font,"MENU NEW FONT",(Vector2){50,50},64,2,WHITE);
+                            DrawTextEx(c_font,"MENU NEW FONT",(Vector2){50,50},64,2,BLACK);
 
                         }
                         break;
