@@ -14,7 +14,7 @@
 #define MAX_FILE_PATH_LEN 1024
 #define MASCOT_PATH "assets/images/pip.png"
 #define FONT_PRESET "assets/fonts/geist-pixel-latin-400-normal.ttf"
-#define FONTSPACING 10
+#define THEME "assets/themes/theme.rgs"
 
 typedef enum
 {
@@ -104,8 +104,8 @@ int main(int argc, char *argv[])
         //gui stuff
         
         //init
-        // SetConfigFlags(FLAG_BORDERLESS_WINDOWED_MODE);
-        InitWindow(GetScreenWidth(), GetScreenHeight(), "Birdi");
+        InitWindow(DefaultSettings.width, DefaultSettings.height, "Birdi");
+        // SetWindowState(FLAG_BORDERLESS_WINDOWED_MODE);
         Settings* SimSettings = &(Settings){
             GetScreenWidth(),
             GetScreenHeight(),
@@ -114,6 +114,12 @@ int main(int argc, char *argv[])
         };
         int SWIDTH = SimSettings->width;
         int SHEIGHT = SimSettings->height;
+        
+        GuiLoadStyle(THEME);
+
+        SetWindowSize(SWIDTH, SHEIGHT);
+        
+
 
         //menu state
         MenuState menu_state = ST_SPLASH;
@@ -132,10 +138,13 @@ int main(int argc, char *argv[])
         FilePathList files = LoadDirectoryFiles(directory);
         Font c_font = LoadFontEx(FONT_PRESET,128,0,250);
         Texture2D pip_tex = LoadTexture(MASCOT_PATH);
+        
+        //splash screen stuff
         float elapsed = 0.0f;
         float splash_alpha = 0.0f;
-        // SetTextLineSpacing(16);
-        volatile bool fpsCounter = false;
+
+
+        static bool fpsCounter = false;
 
         SetTargetFPS(SimSettings->currentFPS);
  
@@ -159,22 +168,6 @@ int main(int argc, char *argv[])
                     break;
                 case ST_DIR:
                     {
-                        if(MenuGui_Init->dir_back_button || IsKeyPressed(KEY_BACKSPACE)){
-                            TextCopy(directory, GetPrevDirectoryPath(directory));
-                            // UnloadDirectoryFiles(files);
-                            files = LoadDirectoryFiles(directory);
-                            // listScrollIndex = 0;
-                            // listItemActive = -1;
-                            // listItemFocused = -1;
-                        }
-                        if(App.GUI->FDItemActive >= 0 && (App.GUI->FDItemActive < (int)files.count) && DirectoryExists(files.paths[App.GUI->FDItemActive])){
-                            TextCopy(directory,files.paths[App.GUI->FDItemActive]);
-                            UnloadDirectoryFiles(files);
-                            files = LoadDirectoryFiles(directory);
-                            // listScrollIndex = 0;
-                            // listItemActive = -1;
-                            // listItemFocused = -1;
-                        }
                     }
                     break;
                 case ST_OPTIONS:
@@ -194,10 +187,11 @@ int main(int argc, char *argv[])
 
             //rendering loop
             BeginDrawing();
-                ClearBackground(RAYWHITE);
+                ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
                 switch(menu_state){
                     case ST_SPLASH:
                         {
+                        DrawRectangle(0, 0, SWIDTH, SHEIGHT, BLACK);
                         enum FADE_STATES {
                             FADEIN,
                             FADEHOLD,
@@ -205,32 +199,31 @@ int main(int argc, char *argv[])
                         };
                         enum FADE_STATES splash_fade = FADEIN;
                         elapsed += GetFrameTime();
-                        if(elapsed < 2.5f){
-                            splash_alpha = elapsed / 2.5f;
+                        if(elapsed < 2.0f){
+                            splash_alpha = elapsed / 2.0f;
                         }
-                        else if(elapsed < 5.0f){
+                        else if(elapsed < 4.0f){
                             splash_alpha = 1.0f;
                         }
-                        else if(elapsed < 7.5f){
-                            splash_alpha = 1.0f - (elapsed - 5.0f)/2.5f;
+                        else if(elapsed < 6.0f){
+                            splash_alpha = 1.0f - (elapsed - 4.0f)/2.0f;
                         }
-                        else{
+                        else {
+                            splash_alpha = 0.0f;
                             App.SPLASH_DONE = true;
                         }
                         float logo_scale_factor = 6.0f;
                         const char* skip_prompt = "Press Enter to Skip\0";
-                        DrawRectangle(0, 0, SWIDTH, SHEIGHT, BLACK);
-                        DrawTextEx(c_font, skip_prompt, (Vector2){SWIDTH / 2.0f - (FONTSPACING*strlen(skip_prompt)),SHEIGHT - 50.0f},40, FONTSPACING, WHITE);
+                        Vector2 size = MeasureTextEx(c_font, skip_prompt, 40, 0);
+                        DrawTextEx(c_font, skip_prompt, (Vector2){(SWIDTH - size.x)/2.0f,SHEIGHT - 50.0f},40.0f, 0, WHITE);
                         switch(splash_fade){
                             case FADEIN:
-                        splash_alpha += 0.05;
                         DrawTextureEx(pip_tex, (Vector2){SWIDTH/2.0f - pip_tex.width/2.0f * logo_scale_factor, SHEIGHT/2.0f - pip_tex.height/2.0f * logo_scale_factor}, 0.0f, logo_scale_factor, Fade(WHITE, splash_alpha));
                         break;
                             case FADEHOLD:
                         DrawTextureEx(pip_tex, (Vector2){SWIDTH/2.0f - pip_tex.width/2.0f * logo_scale_factor, SHEIGHT/2.0f - pip_tex.height/2.0f * logo_scale_factor}, 0.0f, logo_scale_factor, Fade(WHITE, 1.0f));
                         break;
                             case FADEOUT:
-                        splash_alpha -= 0.05;
                         DrawTextureEx(pip_tex, (Vector2){SWIDTH/2.0f - pip_tex.width/2.0f * logo_scale_factor, SHEIGHT/2.0f - pip_tex.height/2.0f * logo_scale_factor}, 0.0f, logo_scale_factor, Fade(WHITE, splash_alpha));
                         break;
                             }
@@ -238,8 +231,11 @@ int main(int argc, char *argv[])
                         break;
                     case ST_MENU:
                         {
-                            DrawTextEx(c_font,"MENU NEW FONT",(Vector2){50,50},64,2,BLACK);
-
+                            const char* title = "Birdi\0";
+                            const int fontsize = 128.0f;
+                            Vector2 size = MeasureTextEx(c_font, title, fontsize, 0);
+                            ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
+                            DrawTextEx(c_font,title,(Vector2){(SWIDTH - size.x)/2.0f,fontsize},fontsize,0,BLACK);
                         }
                         break;
                     case ST_DIR:
@@ -248,7 +244,27 @@ int main(int argc, char *argv[])
                             GuiLabel((Rectangle){ (float)(SWIDTH/ 2.0f) - 100.0f, 10, 800, 50 }, directory);
                             GuiSetStyle(DEFAULT, TEXT_SIZE, GuiGetFont().baseSize);
                             GuiListViewEx((Rectangle){ 0, 50, (float)SWIDTH, (float)SHEIGHT - 50 },
-                                files.paths, files.count, &App.GUI->FDScrollIndex, &App.GUI->FDItemActive,&App.GUI->FDItemFocused);
+                                files.paths, 
+                                files.count, 
+                                &App.GUI->FDScrollIndex, 
+                                &App.GUI->FDItemActive,
+                                &App.GUI->FDItemFocused);
+                        if(MenuGui_Init->dir_back_button || IsKeyPressed(KEY_BACKSPACE)){
+                            TextCopy(directory, GetPrevDirectoryPath(directory));
+                            // UnloadDirectoryFiles(files);
+                            files = LoadDirectoryFiles(directory);
+                            // listScrollIndex = 0;
+                            // listItemActive = -1;
+                            // listItemFocused = -1;
+                        }
+                        if(App.GUI->FDItemActive >= 0 && (App.GUI->FDItemActive < (int)files.count) && DirectoryExists(files.paths[App.GUI->FDItemActive])){
+                            TextCopy(directory,files.paths[App.GUI->FDItemActive]);
+                            UnloadDirectoryFiles(files);
+                            files = LoadDirectoryFiles(directory);
+                            // listScrollIndex = 0;
+                            // listItemActive = -1;
+                            // listItemFocused = -1;
+                        }
                         }
                         break;
                     case ST_OPTIONS:
@@ -281,4 +297,3 @@ int main(int argc, char *argv[])
     }
     return EXIT_SUCCESS;
     }
-
