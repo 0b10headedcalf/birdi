@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
         //gui stuff
         
         //init
-        InitWindow(DefaultSettings.width, DefaultSettings.height, "Birdi");
+        InitWindow(GetScreenWidth(), GetScreenHeight(), "Birdi");
         // SetWindowState(FLAG_BORDERLESS_WINDOWED_MODE);
         Settings* SimSettings = &(Settings){
             GetScreenWidth(),
@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
         
         GuiLoadStyle(THEME);
 
-        SetWindowSize(SWIDTH, SHEIGHT);
+        // SetWindowSize(SWIDTH, SHEIGHT);
         
 
 
@@ -187,7 +187,6 @@ int main(int argc, char *argv[])
 
             //rendering loop
             BeginDrawing();
-                ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
                 switch(menu_state){
                     case ST_SPLASH:
                         {
@@ -240,6 +239,7 @@ int main(int argc, char *argv[])
                         break;
                     case ST_DIR:
                         {
+                            ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
                             MenuGui_Init->dir_back_button = GuiButton((Rectangle){40.0f,20.0f,100,50}, "< BACK");
                             GuiLabel((Rectangle){ (float)(SWIDTH/ 2.0f) - 100.0f, 10, 800, 50 }, directory);
                             GuiSetStyle(DEFAULT, TEXT_SIZE, GuiGetFont().baseSize);
