@@ -16,6 +16,8 @@
 #define FONT_PRESET "assets/fonts/geist-pixel-latin-400-normal.ttf"
 #define THEME "assets/themes/theme.rgs"
 
+
+//structs n such
 typedef enum
 {
     STANDALONE=0,
@@ -36,32 +38,17 @@ typedef struct{
     int FDScrollIndex;
     int FDItemActive;
     int FDItemFocused;
-}GUI;
+}FD_GUI;
+
 
 typedef struct{
-    GUI* GUI;
+    FD_GUI* FD_GUI;
     bool SPLASH_DONE;
 }App;
 
 
-
-int _loadExCLI(const char* example, Settings* global_defaults, bool loader){
-    void* handle = dlopen(example, RTLD_LAZY);
-    if (handle == NULL){
-        fprintf(stderr,"Error: %s\n", dlerror());
-        exit(EXIT_FAILURE);
-    }
-    int (*run)(bool,Settings*) = dlsym(handle,"run");
-    if(run == NULL){
-        fprintf(stderr, "Error: %s\n", dlerror());
-        exit(EXIT_FAILURE);
-    }
-
-    run(loader,global_defaults);
-
-    dlclose(handle);
-    return EXIT_SUCCESS;
-}
+//function declarations
+static int _loadExCLI(const char* example, Settings* global_defaults, bool loader);
 
 int main(int argc, char *argv[])
 {
@@ -76,7 +63,6 @@ int main(int argc, char *argv[])
     //standard defaults
     MODE _MODE = -1;
     int cli_opt = 0;
-
     // assert(_MODE != STANDALONE || _MODE != LOAD);
 
     while((cli_opt = getopt(argc,argv,"hl")) != -1){
@@ -119,26 +105,39 @@ int main(int argc, char *argv[])
         
         //style
         GuiLoadStyle(THEME);
-        Font c_font = LoadFontEx(FONT_PRESET,128,0,250);
+        Font c_font = LoadFontEx(FONT_PRESET,64,NULL,0);
         GuiSetFont(c_font);
-        GuiSetStyle(DEFAULT, TEXT_SIZE, 20);
-
+        //labels
+        GuiSetStyle(DEFAULT, TEXT_SIZE, 64);
+        //buttons
         // SetWindowSize(SWIDTH, SHEIGHT);
         
         //menu state
         MenuState menu_state = 0;
-        GUI* MenuGui_Init  = &(GUI){
+        FD_GUI* FDGUI_Init  = &(FD_GUI){
             0,//back_button
             {0},//directory string
             0, //ScrollIndex
             0,//ItemActive
             0,//ItemFocused
         };
-        App App = {MenuGui_Init,false};
-        App.GUI = MenuGui_Init;
+        App App = {FDGUI_Init,false};
+        App.FD_GUI = FDGUI_Init;
+
+        //menu layout
+        // layout_name: controls initialization
+        //----------------------------------------------------------------------------------
+        // Define controls rectangles
+        Rectangle layoutRecs[5] = {
+            (Rectangle){ 536, 248, 120, 24 },    // Button: SELECT
+            (Rectangle){ 536, 304, 120, 24 },    // Button: LOAD
+            (Rectangle){ 536, 360, 120, 24 },    // Button: OPTIONS
+            (Rectangle){ 536, 192, 120, 24 },    // Button: QUIT
+            (Rectangle){ 576, 96, 120, 24 },    // Label: TITLELABEL
+        };
         
         //fd
-        char* directory = App.GUI->directory;
+        char* directory = App.FD_GUI->directory;
         strncpy(directory, GetWorkingDirectory(), strlen(GetWorkingDirectory()));
         FilePathList files = LoadDirectoryFiles(directory);
         Texture2D pip_tex = LoadTexture(MASCOT_PATH);
@@ -148,10 +147,21 @@ int main(int argc, char *argv[])
         float splash_alpha = 0.0f;
 
         //misc flags
-        static bool fpsCounter = false;
+        // static bool fpsCounter = false;
+        bool exitWindow = false;
+        bool exitWindowRequested = false;
+        SetExitKey(KEY_NULL);
 
         //primary logic
-        while(!WindowShouldClose()){
+        while(!exitWindow){
+            if(WindowShouldClose() || IsKeyPressed(KEY_ESCAPE)){
+                exitWindowRequested = true;
+            }
+            if(exitWindowRequested){
+                if (IsKeyPressed(KEY_Y)) exitWindow = true;
+                else if (IsKeyPressed(KEY_N)) exitWindowRequested = false;
+            }
+
             switch(menu_state){
                 case ST_SPLASH:
                     {
@@ -165,10 +175,6 @@ int main(int argc, char *argv[])
                     break;
                 case ST_MENU:
                     {
-                        if(IsKeyPressed(KEY_ESCAPE)){
-                            CloseWindow();
-                        } 
-                        if(IsKeyPressed(KEY_ENTER)) menu_state = ST_DIR;
                     }
                     break;
                 case ST_DIR:
@@ -182,7 +188,6 @@ int main(int argc, char *argv[])
                     break;
                 case ST_LOADED:
                     {
-                        if(IsKeyPressed(KEY_ENTER)) CloseWindow();
                     }
                     break;
                 default:
@@ -193,6 +198,10 @@ int main(int argc, char *argv[])
             //rendering loop
             BeginDrawing();
                 ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
+
+                if(exitWindowRequested){
+                    // ClearBackground(BLUE);
+                }
                 switch(menu_state){
                     case ST_SPLASH:
                         {
@@ -238,23 +247,28 @@ int main(int argc, char *argv[])
                     case ST_MENU:
                         {
                             const char* title = "Birdi\0";
-                            const int fontsize = 128.0f;
-                            Vector2 size = MeasureTextEx(c_font, title, fontsize, 0);
-                            ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
-                            DrawTextEx(c_font,title,(Vector2){(SWIDTH - size.x)/2.0f,fontsize},fontsize,0,BLACK);
+                            // const int fontsize = 128.0f;
+                            // Vector2 size = MeasureTextEx(c_font, title, fontsize, 0);
+                            // ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
+                            // DrawTextEx(c_font,title,(Vector2){(SWIDTH - size.x)/2.0f,fontsize},fontsize,0,BLACK);
+                            if (GuiButton(layoutRecs[0], "LOAD")) menu_state=ST_DIR; 
+                            if (GuiButton(layoutRecs[1], "OPTIONS")) menu_state=ST_OPTIONS; 
+                            if (GuiButton(layoutRecs[2], "QUIT")) CloseWindow(); 
+                            if (GuiButton(layoutRecs[3], "SELECT")) menu_state = ST_LOADED; 
+                            GuiLabel(layoutRecs[4], title);
                         }
                         break;
                     case ST_DIR:
                         {
-                            MenuGui_Init->dir_back_button = GuiButton((Rectangle){40.0f,20.0f,100,50}, "< BACK");
+                            FDGUI_Init->dir_back_button = GuiButton((Rectangle){40.0f,20.0f,100,50}, "< BACK");
                             GuiLabel((Rectangle){ (float)(SWIDTH/ 2.0f) - 100.0f, 10, 800, 50 }, directory);
                             GuiListViewEx((Rectangle){ 1, 50, (float)SWIDTH, (float)SHEIGHT - 50 },
                                 files.paths, 
                                 files.count, 
-                                &App.GUI->FDScrollIndex, 
-                                &App.GUI->FDItemActive,
-                                &App.GUI->FDItemFocused);
-                        if(MenuGui_Init->dir_back_button || IsKeyPressed(KEY_BACKSPACE)){
+                                &App.FD_GUI->FDScrollIndex, 
+                                &App.FD_GUI->FDItemActive,
+                                &App.FD_GUI->FDItemFocused);
+                        if(FDGUI_Init->dir_back_button || IsKeyPressed(KEY_BACKSPACE)){
                             TextCopy(directory, GetPrevDirectoryPath(directory));
                             // UnloadDirectoryFiles(files);
                             files = LoadDirectoryFiles(directory);
@@ -262,8 +276,8 @@ int main(int argc, char *argv[])
                             // listItemActive = -1;
                             // listItemFocused = -1;
                         }
-                        if(App.GUI->FDItemActive >= 0 && (App.GUI->FDItemActive < (int)files.count) && DirectoryExists(files.paths[App.GUI->FDItemActive])){
-                            TextCopy(directory,files.paths[App.GUI->FDItemActive]);
+                        if(App.FD_GUI->FDItemActive >= 0 && (App.FD_GUI->FDItemActive < (int)files.count) && DirectoryExists(files.paths[App.FD_GUI->FDItemActive])){
+                            TextCopy(directory,files.paths[App.FD_GUI->FDItemActive]);
                             UnloadDirectoryFiles(files);
                             files = LoadDirectoryFiles(directory);
                             // listScrollIndex = 0;
@@ -274,21 +288,12 @@ int main(int argc, char *argv[])
                         break;
                     case ST_OPTIONS:
                         {
-                            DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLUE);   
-                            //FPS counter
+                            DrawText("OPTIONS", 20, 20, 40, WHITE);
 
                         }
                         break;
                     case ST_LOADED:
                         {
-                            DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLUE);   
-                            //FPS counter
-                            if(fpsCounter){
-                                const char* fpsText = 0;
-                                fpsText = TextFormat("FPS: %i",GetFPS(),SimSettings->currentFPS);
-                                DrawText(fpsText,10,10,20,GREEN);
-                            }
-                            //TODO implement splash screen
                             DrawText("LOADED", 20, 20, 40, WHITE);
 
                         }
@@ -302,3 +307,23 @@ int main(int argc, char *argv[])
     }
     return EXIT_SUCCESS;
     }
+
+static int _loadExCLI(const char* example, Settings* global_defaults, bool loader){
+    void* handle = dlopen(example, RTLD_LAZY);
+    if (handle == NULL){
+        fprintf(stderr,"Error: %s\n", dlerror());
+        exit(EXIT_FAILURE);
+    }
+    int (*run)(bool,Settings*) = dlsym(handle,"run");
+    if(run == NULL){
+        fprintf(stderr, "Error: %s\n", dlerror());
+        exit(EXIT_FAILURE);
+    }
+
+    run(loader,global_defaults);
+
+    dlclose(handle);
+    return EXIT_SUCCESS;
+}
+
+
