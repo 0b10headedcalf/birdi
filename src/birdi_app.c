@@ -75,9 +75,9 @@ int main(int argc, char *argv[])
 
     //standard defaults
     MODE _MODE = -1;
-    int cli_opt;
+    int cli_opt = 0;
 
-    assert(_MODE != STANDALONE || _MODE != LOAD);
+    // assert(_MODE != STANDALONE || _MODE != LOAD);
 
     while((cli_opt = getopt(argc,argv,"hl")) != -1){
         switch(cli_opt){
@@ -106,23 +106,27 @@ int main(int argc, char *argv[])
         //init
         InitWindow(GetScreenWidth(), GetScreenHeight(), "Birdi");
         // SetWindowState(FLAG_BORDERLESS_WINDOWED_MODE);
+        int SWIDTH = GetScreenWidth();
+        int SHEIGHT = GetScreenHeight();
+        int TARGETFPS = 60;
         Settings* SimSettings = &(Settings){
-            GetScreenWidth(),
-            GetScreenHeight(),
-            60,
+            SWIDTH,
+            SHEIGHT,
+            TARGETFPS,
             "Birdi"
         };
-        int SWIDTH = SimSettings->width;
-        int SHEIGHT = SimSettings->height;
+        SetTargetFPS(TARGETFPS);
         
+        //style
         GuiLoadStyle(THEME);
+        Font c_font = LoadFontEx(FONT_PRESET,128,0,250);
+        GuiSetFont(c_font);
+        GuiSetStyle(DEFAULT, TEXT_SIZE, 20);
 
         // SetWindowSize(SWIDTH, SHEIGHT);
         
-
-
         //menu state
-        MenuState menu_state = ST_SPLASH;
+        MenuState menu_state = 0;
         GUI* MenuGui_Init  = &(GUI){
             0,//back_button
             {0},//directory string
@@ -132,24 +136,22 @@ int main(int argc, char *argv[])
         };
         App App = {MenuGui_Init,false};
         App.GUI = MenuGui_Init;
+        
         //fd
         char* directory = App.GUI->directory;
         strncpy(directory, GetWorkingDirectory(), strlen(GetWorkingDirectory()));
         FilePathList files = LoadDirectoryFiles(directory);
-        Font c_font = LoadFontEx(FONT_PRESET,128,0,250);
         Texture2D pip_tex = LoadTexture(MASCOT_PATH);
         
         //splash screen stuff
         float elapsed = 0.0f;
         float splash_alpha = 0.0f;
 
-
+        //misc flags
         static bool fpsCounter = false;
 
-        SetTargetFPS(SimSettings->currentFPS);
- 
+        //primary logic
         while(!WindowShouldClose()){
-            //primary logic
             switch(menu_state){
                 case ST_SPLASH:
                     {
@@ -163,6 +165,9 @@ int main(int argc, char *argv[])
                     break;
                 case ST_MENU:
                     {
+                        if(IsKeyPressed(KEY_ESCAPE)){
+                            CloseWindow();
+                        } 
                         if(IsKeyPressed(KEY_ENTER)) menu_state = ST_DIR;
                     }
                     break;
@@ -187,10 +192,12 @@ int main(int argc, char *argv[])
 
             //rendering loop
             BeginDrawing();
+                ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
                 switch(menu_state){
                     case ST_SPLASH:
                         {
-                        DrawRectangle(0, 0, SWIDTH, SHEIGHT, BLACK);
+                        ClearBackground(BLACK);
+                        // DrawRectangle(0, 0, SWIDTH, SHEIGHT, BLACK);
                         enum FADE_STATES {
                             FADEIN,
                             FADEHOLD,
@@ -239,11 +246,9 @@ int main(int argc, char *argv[])
                         break;
                     case ST_DIR:
                         {
-                            ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
                             MenuGui_Init->dir_back_button = GuiButton((Rectangle){40.0f,20.0f,100,50}, "< BACK");
                             GuiLabel((Rectangle){ (float)(SWIDTH/ 2.0f) - 100.0f, 10, 800, 50 }, directory);
-                            GuiSetStyle(DEFAULT, TEXT_SIZE, GuiGetFont().baseSize);
-                            GuiListViewEx((Rectangle){ 0, 50, (float)SWIDTH, (float)SHEIGHT - 50 },
+                            GuiListViewEx((Rectangle){ 1, 50, (float)SWIDTH, (float)SHEIGHT - 50 },
                                 files.paths, 
                                 files.count, 
                                 &App.GUI->FDScrollIndex, 
