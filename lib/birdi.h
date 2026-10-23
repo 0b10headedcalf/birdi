@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <time.h>
+
 
 typedef struct GameManager GameManager;
 typedef enum state_enum state_enum;
@@ -35,7 +37,6 @@ double b_lerp(double a, double b, double step);
 #endif
 
 #ifdef BIRDI_IMPLEMENTATION
-#include <time.h>
 
 void INIT_SEED(uint64_t* seed){
     *seed = (uint64_t)time(NULL); 

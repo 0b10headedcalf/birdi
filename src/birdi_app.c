@@ -16,7 +16,6 @@
 #define FONT_PRESET "assets/fonts/geist-pixel-latin-400-normal.ttf"
 #define THEME "assets/themes/theme.rgs"
 
-
 //structs n such
 typedef enum
 {
