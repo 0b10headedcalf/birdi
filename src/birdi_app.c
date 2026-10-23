@@ -104,13 +104,13 @@ int main(int argc, char *argv[])
         
         //style
         GuiLoadStyle(THEME);
-        Font c_font = LoadFontEx(FONT_PRESET,64,NULL,0);
+        Font c_font = LoadFontEx(FONT_PRESET,128,NULL,0);
         GuiSetFont(c_font);
         //labels
-        GuiSetStyle(DEFAULT, TEXT_SIZE, 64);
+        GuiSetStyle(DEFAULT, TEXT_SIZE, 32);
         //buttons
         // SetWindowSize(SWIDTH, SHEIGHT);
-        
+        SetShapesTexture((Texture2D){0}, (Rectangle){0,0,1,1});
         //menu state
         MenuState menu_state = 0;
         FD_GUI* FDGUI_Init  = &(FD_GUI){
@@ -123,18 +123,6 @@ int main(int argc, char *argv[])
         App App = {FDGUI_Init,false};
         App.FD_GUI = FDGUI_Init;
 
-        //menu layout
-        // layout_name: controls initialization
-        //----------------------------------------------------------------------------------
-        // Define controls rectangles
-        Rectangle layoutRecs[5] = {
-            (Rectangle){ 536, 248, 120, 24 },    // Button: SELECT
-            (Rectangle){ 536, 304, 120, 24 },    // Button: LOAD
-            (Rectangle){ 536, 360, 120, 24 },    // Button: OPTIONS
-            (Rectangle){ 536, 192, 120, 24 },    // Button: QUIT
-            (Rectangle){ 576, 96, 120, 24 },    // Label: TITLELABEL
-        };
-        
         //fd
         char* directory = App.FD_GUI->directory;
         strncpy(directory, GetWorkingDirectory(), strlen(GetWorkingDirectory()));
@@ -198,14 +186,10 @@ int main(int argc, char *argv[])
             BeginDrawing();
                 ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 
-                if(exitWindowRequested){
-                    // ClearBackground(BLUE);
-                }
                 switch(menu_state){
                     case ST_SPLASH:
                         {
                         ClearBackground(BLACK);
-                        // DrawRectangle(0, 0, SWIDTH, SHEIGHT, BLACK);
                         enum FADE_STATES {
                             FADEIN,
                             FADEHOLD,
@@ -245,16 +229,37 @@ int main(int argc, char *argv[])
                         break;
                     case ST_MENU:
                         {
+                            const float buttonWidth = 240.0f;
+                            const float buttonHeight = 48.0f;
+                            const float gap = 16.0f;
+                            const float titleHeight = 48.0f;
+                            const float titleGap = 32.0f;
+                            const float menuHeight = titleHeight + titleGap
+                                + 4 * buttonHeight + 3 * gap;
+                            const float x = (SWIDTH - buttonWidth) / 2.0f;
+                            const float top = (SHEIGHT - menuHeight) / 2.0f;
+                            const float firstButtonY = top + titleHeight + titleGap;
+                            Rectangle mm_layoutRecs[5];
+                            for (int i = 0; i < 4; ++i) {
+                                mm_layoutRecs[i] = (Rectangle){
+                                    x, firstButtonY + i * (buttonHeight + gap),
+                                    buttonWidth, buttonHeight
+                                };
+                            }
+                            mm_layoutRecs[4] = (Rectangle){x, top, buttonWidth, titleHeight};
                             const char* title = "Birdi\0";
                             // const int fontsize = 128.0f;
                             // Vector2 size = MeasureTextEx(c_font, title, fontsize, 0);
                             // ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
                             // DrawTextEx(c_font,title,(Vector2){(SWIDTH - size.x)/2.0f,fontsize},fontsize,0,BLACK);
-                            if (GuiButton(layoutRecs[0], "LOAD")) menu_state=ST_DIR; 
-                            if (GuiButton(layoutRecs[1], "OPTIONS")) menu_state=ST_OPTIONS; 
-                            if (GuiButton(layoutRecs[2], "QUIT")) CloseWindow(); 
-                            if (GuiButton(layoutRecs[3], "SELECT")) menu_state = ST_LOADED; 
-                            GuiLabel(layoutRecs[4], title);
+                            if (GuiButton(mm_layoutRecs[0], "SELECT")) menu_state=ST_LOADED; 
+                            if (GuiButton(mm_layoutRecs[1], "LOAD")) menu_state=ST_DIR; 
+                            if (GuiButton(mm_layoutRecs[2], "OPTIONS")) menu_state = ST_OPTIONS; 
+                            if (GuiButton(mm_layoutRecs[3], "QUIT")) exitWindowRequested = true; 
+                            int previousAlignment = GuiGetStyle(LABEL, TEXT_ALIGNMENT);
+                            GuiSetStyle(LABEL, TEXT_ALIGNMENT, TEXT_ALIGN_CENTER);
+                            GuiLabel(mm_layoutRecs[4], title);
+                            GuiSetStyle(LABEL, TEXT_ALIGNMENT, previousAlignment);
                         }
                         break;
                     case ST_DIR:
@@ -300,6 +305,25 @@ int main(int argc, char *argv[])
                     default:
                         break;
                     }
+                if(exitWindowRequested && menu_state != ST_SPLASH){
+                    int quitboxchoice = -1;
+                    const float qBoxW = 800.0f;
+                    const float qBoxH = 400.0f;
+                    Rectangle qBoxBounds = {
+                        (SWIDTH - qBoxW)/2,
+                        (SHEIGHT - qBoxH)/2,
+                        qBoxW,
+                        qBoxH
+                    };
+                    DrawRectangle(0, 0, SWIDTH, SHEIGHT, Fade(BLACK, 0.5f));
+                    GuiMessageBox(qBoxBounds, GuiIconText(ICON_CIRCLE_WARNING_FILL, "Quit Application"), "Quit Birdi?", "Y;N", &quitboxchoice);
+                    if(quitboxchoice == 1){
+                        exitWindow = true;
+                    }
+                    else if (quitboxchoice == 0 || quitboxchoice == 2){
+                        exitWindowRequested = false;
+                    }
+                }
             EndDrawing();
             }
             CloseWindow();
