@@ -267,6 +267,7 @@ int main(int argc, char *argv[])
                         break;
                     case ST_DIR:
                         {
+                            //file system gui
                             FDGUI_Init->dir_back_button = GuiButton((Rectangle){40.0f,20.0f,100,50}, "< BACK");
                             GuiLabel((Rectangle){ (float)(SWIDTH/ 2.0f) - 100.0f, 10, 800, 50 }, directory);
                             GuiListViewEx((Rectangle){ 1, 50, (float)SWIDTH, (float)SHEIGHT - 50 },
