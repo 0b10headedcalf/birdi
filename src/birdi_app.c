@@ -15,6 +15,7 @@
 #define MASCOT_PATH "assets/images/pip.png"
 #define FONT_PRESET "assets/fonts/geist-pixel-latin-400-normal.ttf"
 #define THEME "assets/themes/theme.rgs"
+#define DEFAULT_TEXT_SIZE 32
 
 //structs n such
 typedef enum
@@ -25,7 +26,7 @@ typedef enum
 
 typedef enum{
     ST_SPLASH = 0,
-    ST_MENU,
+    ST_M_MENU,
     ST_DIR,
     ST_OPTIONS,
     ST_LOADED
@@ -107,7 +108,7 @@ int main(int argc, char *argv[])
         Font c_font = LoadFontEx(FONT_PRESET,128,NULL,0);
         GuiSetFont(c_font);
         //labels
-        GuiSetStyle(DEFAULT, TEXT_SIZE, 32);
+        GuiSetStyle(DEFAULT, TEXT_SIZE, DEFAULT_TEXT_SIZE);
         //buttons
         // SetWindowSize(SWIDTH, SHEIGHT);
         SetShapesTexture((Texture2D){0}, (Rectangle){0,0,1,1});
@@ -153,14 +154,14 @@ int main(int argc, char *argv[])
                 case ST_SPLASH:
                     {
                         if(App.SPLASH_DONE == true){
-                            menu_state = ST_MENU;
+                            menu_state = ST_M_MENU;
                         }
                         if(IsKeyPressed(KEY_ENTER)){
                             App.SPLASH_DONE = true;
                         }
                     }
                     break;
-                case ST_MENU:
+                case ST_M_MENU:
                     {
                     }
                     break;
@@ -227,7 +228,7 @@ int main(int argc, char *argv[])
                             }
                         }
                         break;
-                    case ST_MENU:
+                    case ST_M_MENU:
                         {
                             const float buttonWidth = 240.0f;
                             const float buttonHeight = 48.0f;
@@ -256,10 +257,12 @@ int main(int argc, char *argv[])
                             if (GuiButton(mm_layoutRecs[1], "LOAD")) menu_state=ST_DIR; 
                             if (GuiButton(mm_layoutRecs[2], "OPTIONS")) menu_state = ST_OPTIONS; 
                             if (GuiButton(mm_layoutRecs[3], "QUIT")) exitWindowRequested = true; 
-                            int previousAlignment = GuiGetStyle(LABEL, TEXT_ALIGNMENT);
+                            // int previousAlignment = GuiGetStyle(LABEL, TEXT_ALIGNMENT);
                             GuiSetStyle(LABEL, TEXT_ALIGNMENT, TEXT_ALIGN_CENTER);
+                            // GuiSetStyle(LABEL, TEXT_ALIGNMENT, previousAlignment);
+                            GuiSetStyle(DEFAULT, TEXT_SIZE, 128);
                             GuiLabel(mm_layoutRecs[4], title);
-                            GuiSetStyle(LABEL, TEXT_ALIGNMENT, previousAlignment);
+                            GuiSetStyle(DEFAULT, TEXT_SIZE, DEFAULT_TEXT_SIZE);
                         }
                         break;
                     case ST_DIR:
