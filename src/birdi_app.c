@@ -118,8 +118,8 @@ int main(int argc, char *argv[])
             0,//back_button
             {0},//directory string
             0, //ScrollIndex
-            0,//ItemActive
-            0,//ItemFocused
+            -1,//ItemActive
+            -1,//ItemFocused
         };
         App App = {FDGUI_Init,false};
         App.FD_GUI = FDGUI_Init;
@@ -138,11 +138,20 @@ int main(int argc, char *argv[])
         // static bool fpsCounter = false;
         bool exitWindow = false;
         bool exitWindowRequested = false;
+        bool FD_loadbox = false;
         SetExitKey(KEY_NULL);
+
+        //gui stuff
+        Rectangle MessageBoxBounds = {
+            (SWIDTH - 800.0f)/2,
+            (SHEIGHT - 400.0f)/2,
+            800,
+            400
+        };
 
         //primary logic
         while(!exitWindow){
-            if(WindowShouldClose() || IsKeyPressed(KEY_ESCAPE)){
+            if(WindowShouldClose()){
                 exitWindowRequested = true;
             }
             if(exitWindowRequested){
@@ -268,36 +277,66 @@ int main(int argc, char *argv[])
                     case ST_DIR:
                         {
                             //file system gui
-                            FDGUI_Init->dir_back_button = GuiButton((Rectangle){20.0f,20.0f,120,40}, GuiIconText(ICON_ARROW_LEFT_FILL, "BACK"));
-                            // GuiSetStyle(LABEL,TEXT_ALIGNMENT,TEXT_ALIGN_CENTER);
-                            GuiLabel((Rectangle){ (SWIDTH - 800.0f)/2.0f, 20, 800, 40 }, directory);
-                            GuiListViewEx((Rectangle){ 0, 70, (float)SWIDTH, (float)SHEIGHT - 50 },
-                                files.paths,
-                                files.count, 
-                                &App.FD_GUI->FDScrollIndex, 
-                                &App.FD_GUI->FDItemActive,
-                                &App.FD_GUI->FDItemFocused);
+                        FDGUI_Init->dir_back_button = GuiButton((Rectangle){20.0f,20.0f,120,40}, GuiIconText(ICON_ARROW_LEFT_FILL, "BACK"));
+                        // GuiSetStyle(LABEL,TEXT_ALIGNMENT,TEXT_ALIGN_CENTER);
+                        GuiLabel((Rectangle){ (SWIDTH - 800.0f)/2.0f, 20, 800, 40 }, directory);
+                        GuiListViewEx((Rectangle){ 0, 70, (float)SWIDTH, (float)SHEIGHT - 50 },
+                            files.paths,
+                            files.count, 
+                            &App.FD_GUI->FDScrollIndex, 
+                            &App.FD_GUI->FDItemActive,
+                            &App.FD_GUI->FDItemFocused);
+                        switch (GetKeyPressed()) {
+                            case KEY_DOWN:
+                                if(App.FD_GUI->FDItemFocused < (int)files.count - 1){
+                                    App.FD_GUI->FDItemFocused++;
+                                }
+                                break;
+                            case KEY_UP:
+                                if(App.FD_GUI->FDItemFocused > 0){
+                                    App.FD_GUI->FDItemFocused--;
+                                }
+                                break;
+                            case KEY_ENTER:
+                                App.FD_GUI->FDItemActive = App.FD_GUI->FDItemFocused;
+                                break;
+                            case KEY_ESCAPE:
+                                menu_state = ST_M_MENU;
+                                break;
+                            default:
+                                break;
+                        }
                         int selected_item = App.FD_GUI->FDItemActive;
-                        if(FDGUI_Init->dir_back_button){
+                        if(FDGUI_Init->dir_back_button || IsKeyPressed(KEY_BACKSPACE)){
                             TextCopy(directory, GetPrevDirectoryPath(directory));
                             UnloadDirectoryFiles(files);
                             files = LoadDirectoryFiles(directory);
                             App.FD_GUI->FDScrollIndex = 0;
                             App.FD_GUI->FDItemActive = -1;
-                            App.FD_GUI->FDItemFocused =-1;
+                            App.FD_GUI->FDItemFocused =0;
                         }
-                        if(selected_item >= 0 && (selected_item < (int)files.count) && DirectoryExists(files.paths[selected_item])){
+                        if(selected_item >= 0 && selected_item < (int)files.count && DirectoryExists(files.paths[selected_item])){
                             TextCopy(directory,files.paths[App.FD_GUI->FDItemActive]);
                             UnloadDirectoryFiles(files);
                             files = LoadDirectoryFiles(directory);
                             App.FD_GUI->FDScrollIndex = 0;
                             App.FD_GUI->FDItemActive = -1;
-                            App.FD_GUI->FDItemFocused =-1;
+                            App.FD_GUI->FDItemFocused =0;
                         }
                         if(selected_item >= 0 && selected_item < (int)files.count && !DirectoryExists(files.paths[selected_item])){
+                            int choice = -1;
+                               if(FD_loadbox){
+                                   GuiMessageBox(MessageBoxBounds,GuiIconText(ICON_FILE_OPEN, "Load Module"), "Load file?", "Y;N", &choice);
+                               }
+                               if(choice == 1){
+                                   printf("%s loading...\n",files.paths[selected_item]);
+                               }
+                               else if (choice == 0 || choice == 2){
+                                   FD_loadbox = false;
+                               }
                             if(IsKeyPressed(KEY_ENTER)){
                                if(IsFileExtension(files.paths[selected_item], ".so")){
-                                   printf("%s loading...\n",files.paths[selected_item]);
+                                   FD_loadbox = true;
                                } 
                                else{
                                    printf("File selected is not a shared object...\n");
@@ -325,16 +364,16 @@ int main(int argc, char *argv[])
                     }
                 if(exitWindowRequested && menu_state != ST_SPLASH){
                     int quitboxchoice = -1;
-                    const float qBoxW = 800.0f;
-                    const float qBoxH = 400.0f;
-                    Rectangle qBoxBounds = {
-                        (SWIDTH - qBoxW)/2,
-                        (SHEIGHT - qBoxH)/2,
-                        qBoxW,
-                        qBoxH
-                    };
+                    // const float qBoxW = 800.0f;
+                    // const float qBoxH = 400.0f;
+                    // Rectangle qBoxBounds = {
+                    //     (SWIDTH - qBoxW)/2,
+                    //     (SHEIGHT - qBoxH)/2,
+                    //     qBoxW,
+                    //     qBoxH
+                    // };
                     DrawRectangle(0, 0, SWIDTH, SHEIGHT, Fade(BLACK, 0.5f));
-                    GuiMessageBox(qBoxBounds, GuiIconText(ICON_CIRCLE_WARNING_FILL, "Quit Application"), "Quit Birdi?", "Y;N", &quitboxchoice);
+                    GuiMessageBox(MessageBoxBounds, GuiIconText(ICON_CIRCLE_WARNING_FILL, "Quit Application"), "Quit Birdi?", "Y;N", &quitboxchoice);
                     if(quitboxchoice == 1){
                         exitWindow = true;
                     }
